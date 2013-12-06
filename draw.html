@@ -557,10 +557,10 @@
       var delta = time-lastTick;
       lastTick = time;
 
-      if (activePoint && points.length > 1) {
+      if (activePoint) {
         
         var lastPoint = points[points.length-1];
-        var prevPoint = points[points.length-2];
+        var prevPoint = (points.length > 1) ? points[points.length-2] : Vec2(100, activePoint.y);
 
         var pointVec = prevPoint.subtract(lastPoint, true).normalize();
         var activeVec = mouse.subtract(lastPoint, true).normalize();
