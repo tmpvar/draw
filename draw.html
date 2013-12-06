@@ -477,7 +477,7 @@
     };
 
     var near = function(a, b, threshold) {
-      if (Math.abs(Math.abs(a)-Math.abs(b)) < threshold) {
+      if (Math.abs(a-b) < threshold) {
         return true;
       }
     };
@@ -515,34 +515,35 @@
         var prevRads = prevPoint.normalize(true).angleTo(lastPoint.normalize(true));
 
         var inverse = rads < 0;
-        var angularThreshold = TAU/32;
+        var angularThreshold = TAU/16;
         var rightAngle = TAU/4;
         var snapAngles = TAU/8;
 
-
-        /*
-          * find the closest snapAngle
-          
-          * snap to it
-
-        */
-
-
-        //if (near(rightAngle - (((computedRads/rightAngle)%1)*rightAngle), 0, angularThreshold)) {
-        if (near(computedRads, rightAngle, angularThreshold)) {// || near(computedRads, 3*(rightAngle), angularThreshold)) {
+        var snapDiv = (computedRads/snapAngles);
+        var snapMod = snapDiv%1;
+        var snapRound = Math.round(snapDiv) * snapAngles;
+        var snapClosest = (1-snapMod)*snapAngles;
+        if (
+          near(snapClosest + snapAngles/2, snapAngles, -angularThreshold) ||
+          near(snapClosest-snapAngles/2, snapAngles, angularThreshold) ||
+          near(snapClosest + snapAngles/2, snapAngles, angularThreshold)
+        ) {
           var activeLength = activePoint.subtract(lastPoint).length();
           activePoint = new Point(activeLength, 0);
-          rads = (inverse) ? -rightAngle : rightAngle;
-          activePoint.rotate(radsFromZero+rads);
-
+          
+          rads = -snapRound;
+          activePoint.rotate(radsFromZero - Math.PI);
+          activePoint.rotate(-rads);
           activePoint.add(lastPoint);
           var activeVec = activePoint.subtract(lastPoint, true).normalize();
+        } else {
+          console.log(angularThreshold, snapAngles, snapClosest);
         }
 
-        activePoint.render(delta);
-        var degs = (inverse) ? rads + TAU/2 : rads;
-        degs *= (360/TAU);
 
+        activePoint.render(delta);
+        var degs = Math.abs(rads *(360/TAU));
+        
         // render degrees
         ctx.beginPath();
 
@@ -564,7 +565,7 @@
           ctx.restore();
           ctx.save();
             ctx.beginPath();
-              var bisector = Vec2(radius + 2/scale, 0).rotate(-activeVec.angleTo(pointVec)/2-activeRads); 
+              var bisector = Vec2(radius + 2/scale, 0).rotate(radsFromZero + (inverse) ? -rads/2 : rads/2); 
               ctx.translate(lastPoint.x, lastPoint.y);
               
              
