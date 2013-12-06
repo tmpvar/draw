@@ -324,7 +324,6 @@
                 ctx.restore();
               }
             }
-
           }
         });
       });
@@ -442,6 +441,7 @@
           points = [];
           activePoint = null;
         break;
+
         case 186:
 
           if (e.shiftKey) {
@@ -477,9 +477,67 @@
     };
 
     var near = function(a, b, threshold) {
-      if (Math.abs(a-b) < threshold) {
+      a = Math.abs(a);
+      if (a-b < threshold && a-b > -threshold) {
         return true;
       }
+    };
+
+    var renderDegrees = function(point, radsFromZero, rads) { 
+        var degs = Math.abs(rads *(360/TAU));
+        
+        // render degrees
+        ctx.beginPath();
+
+          ctx.save();
+            ctx.translate(point.x, point.y);
+            ctx.beginPath();
+            var radius = 20/scale; 
+              ctx.rotate(radsFromZero - Math.PI);
+              rads < 0 && ctx.rotate(-rads);
+              ctx.arc(0, 0, radius, -Math.abs(rads), false);
+              ctx.lineTo(0, 0);
+
+            ctx.closePath();
+                     
+            ctx.strokeStyle = "rgba(0, 255, 0, .2)";
+            ctx.fillStyle = "rgba(0, 255, 0, .05)";
+            ctx.stroke();
+            ctx.fill();
+          ctx.restore();
+          ctx.save();
+            ctx.beginPath();
+              var bisector = Vec2(radius * 3/scale, 0).rotate(radsFromZero  -rads/2); 
+              ctx.translate(point.x, point.y);
+              
+              ctx.moveTo(0, 0);
+              ctx.lineTo(bisector.x, bisector.y);
+              ctx.stroke();
+              
+              ctx.translate(bisector.x, bisector.y);
+
+              ctx.fillStyle="rgba(0, 255, 0, .7)";
+              ctx.font = (12/scale) + 'px sans-serif';
+              var text = fixed(degs, 1) + degreeSymbol;
+              var textWidth = ctx.measureText(text).width;
+              ctx.fillText(text, 5/scale, -6/scale);
+
+              ctx.moveTo(0, 0);
+              ctx.lineTo(textWidth+5/scale, 0);
+              ctx.stroke();
+
+          ctx.restore();
+        ctx.closePath();
+    }
+
+    var lineRadsFromZero = function(start, end) {
+        return Vec2(1, 0).angleTo(end.subtract(start, true).normalize());
+    };
+
+    var lineIntersectionRads = function(start, shared, end) { 
+      var pointVec = start.subtract(shared, true).normalize();
+      var activeVec = end.subtract(shared, true).normalize();
+      return activeVec.angleTo(pointVec);
     };
 
     requestAnimationFrame(function tick(time) {
@@ -535,60 +593,13 @@
           activePoint.rotate(radsFromZero - Math.PI);
           activePoint.rotate(-rads);
           activePoint.add(lastPoint);
-          var activeVec = activePoint.subtract(lastPoint, true).normalize();
-        } else {
-          console.log(angularThreshold, snapAngles, snapClosest);
         }
 
-
         activePoint.render(delta);
-        var degs = Math.abs(rads *(360/TAU));
         
-        // render degrees
-        ctx.beginPath();
-
-          ctx.save();
-            ctx.translate(lastPoint.x, lastPoint.y);
-            ctx.beginPath();
-            var radius = 20/scale; 
-              ctx.rotate(radsFromZero - Math.PI);
-              inverse && ctx.rotate(-rads);
-              ctx.arc(0, 0, radius, (inverse) ? rads : -rads, false);
-              ctx.lineTo(0, 0);
-
-            ctx.closePath();
-                     
-            ctx.strokeStyle = "rgba(0, 255, 0, .2)";
-            ctx.fillStyle = "rgba(0, 255, 0, .05)";
-            ctx.stroke();
-            ctx.fill();
-          ctx.restore();
-          ctx.save();
-            ctx.beginPath();
-              var bisector = Vec2(radius + 2/scale, 0).rotate(radsFromZero + (inverse) ? -rads/2 : rads/2); 
-              ctx.translate(lastPoint.x, lastPoint.y);
-              
-             
-              ctx.moveTo(0, 0);
-              ctx.lineTo(bisector.x, bisector.y);
-              ctx.stroke();
-              
-              ctx.translate(bisector.x, bisector.y);
-
-              ctx.fillStyle="rgba(0, 255, 0, .2)";
-              ctx.font = (12/scale) + 'px sans-serif';
-              var text = fixed(degs, 1) + degreeSymbol;
-              var textWidth = ctx.measureText(text).width;
-              ctx.fillText(text, 5/scale, -6/scale);
-
-              ctx.moveTo(0, 0);
-              ctx.lineTo(textWidth+5/scale, 0);
-              ctx.stroke();
-
-
-          ctx.restore();
-        ctx.closePath();
+        renderDegrees(lastPoint, radsFromZero, rads);
       }
+
 
       paths.forEach(function(points) {
         ctx.beginPath();
@@ -628,8 +639,6 @@
       points.forEach(function(point) {
         point.render(delta);
       });
-
-
 
       ctx.restore();
 
