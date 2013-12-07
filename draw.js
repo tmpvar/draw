@@ -1,5 +1,11 @@
 /*
   TODO: 
+
+    * Snapping
+      * Helpers
+        * Endpoints lines
+        * Midpoints lines
+
     * modes
       * selection mode by default
       * line mode until <esc> out of it
@@ -11,13 +17,6 @@
       * compute circle -> line intersection much like existing point check
       * handle click and add point where isect or closest occurs
     
-    * Snapping
-      * Points
-        * Endpoints
-        * Midpoints
-      * Helpers
-        * Endpoints
-        * Midpoints
 
     * Dimensioning
       * Bind to point's change
@@ -37,11 +36,11 @@ var term = function(val) {
   document.getElementById('terminal').appendChild(li);
 }
 var mouse = Vec2(0, 0);
-var intersectionThreshold = 20;
+var intersectionThreshold = 15;
 var angularThreshold = 5;
 //<!--
 var TAU = Math.PI*2;
-var highlighted = null;
+var highlighted = null, hovering = null;
 var rgba = function(array) {
   return 'rgba(' + array.join(',') + ')';
 };
@@ -73,7 +72,7 @@ Point.prototype.render = function(diff) {
     ctx.beginPath();
       ctx.arc(this.x, this.y, this.width*2.5, TAU, false);
     ctx.closePath();
-    highlighted = this;
+    hovering = this;
   } else {
     ctx.beginPath();
      ctx.arc(this.x, this.y, this.width, TAU, false);
@@ -302,13 +301,23 @@ Point.trackingModes = {
 
 var activePoint = null, dragging = null;
 canvas.addEventListener('mousedown', function(e) {
+  if (hovering) {
+    dragging = hovering;
 
-  if (activePoint && highlighted && !highlighted.isAutoCentering) {
-    activePoint = highlighted;
+  } else if (!activePoint) {
+    e = fixMouse(e);
+    points.push(new Point(e.x, e.y));
+    activePoint = new Point(e.x, e.y);
+  }
+});
+
+canvas.addEventListener('mouseup', function(e) {
+  if (activePoint && hovering && !highlighted.isAutoCentering) {
+    activePoint = hovering;
     highlighted = null;  
   }
 
-  if (!highlighted || activePoint) {
+  if ((!hovering && !highlighted) || activePoint) {
      e = fixMouse(e);
      if (states.center) {
        var centerPoint = new Point(states.center.x, states.center.y)
@@ -333,14 +342,13 @@ canvas.addEventListener('mousedown', function(e) {
        }
        activePoint = new Point(e.x, e.y);
      }
-   } else if (highlighted) {
+   } else if (hovering) {
      if (!highlighted.isAutoCentering) {
-       dragging = highlighted;
+       dragging = hovering;
+       hovering = null;
      }
    } 
-});
 
-canvas.addEventListener('mouseup', function(e) {
   if (dragging) {
     dragging = null;
   }
@@ -484,6 +492,7 @@ var lineIntersectionRads = function(start, shared, end) {
 
 requestAnimationFrame(function tick(time) {
   highlighted = false; 
+  hovering = false;
   canvas.width = 0;
   canvas.width = window.innerWidth;
   canvas.height = window.innerHeight;
