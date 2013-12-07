@@ -499,9 +499,8 @@
             ctx.translate(point.x, point.y);
             ctx.beginPath();
             var radius = 20/scale; 
-              ctx.rotate(radsFromZero - Math.PI);
-              rads < 0 && ctx.rotate(-rads);
-              ctx.arc(0, 0, radius, -Math.abs(rads), false);
+              rads < 0 ? ctx.rotate(radsFromZero) : ctx.rotate(radsFromZero + rads);;
+              ctx.arc(0, 0, radius, (rads < 0) ? rads : -rads, false);
               ctx.lineTo(0, 0);
 
             ctx.closePath();
@@ -513,7 +512,7 @@
           ctx.restore();
           ctx.save();
             ctx.beginPath();
-              var bisector = Vec2(radius * 3/scale, 0).rotate(radsFromZero  -rads/2); 
+              var bisector = Vec2(radius * 3/scale, 0).rotate(radsFromZero + (rads<0) ? rads/2 : rads/2); 
               ctx.translate(point.x, point.y);
               
               ctx.moveTo(0, 0);
@@ -566,44 +565,42 @@
       if (activePoint) {
         
         var lastPoint = points[points.length-1];
-        var prevPoint = (points.length > 1) ? points[points.length-2] : Vec2(100, activePoint.y);
+        var prevPoint = (points.length > 1) ? points[points.length-2] : Vec2(100, lastPoint.y);
 
         var pointVec = prevPoint.subtract(lastPoint, true).normalize();
         var activeVec = mouse.subtract(lastPoint, true).normalize();
-        var activeRads = -Math.atan2(activeVec.y, activeVec.x);
-        var pointRads = -Math.atan2(pointVec.y, pointVec.x);
-        var rads = activeVec.angleTo(pointVec);
+        var rads = pointVec.angleTo(activeVec);
            
-        var computedRads  = prevPoint.subtract(lastPoint, true).normalize().angleTo(activeVec);
-        var radsFromZero = Vec2(1, 0).angleTo(lastPoint.subtract(prevPoint, true).normalize());
-        var prevRads = prevPoint.normalize(true).angleTo(lastPoint.normalize(true));
+        var radsFromZero = lineRadsFromZero(lastPoint, prevPoint);
 
         var inverse = rads < 0;
-        var angularThreshold = TAU/16;
-        var rightAngle = TAU/4;
+        var angularThreshold = TAU/32;
         var snapAngles = TAU/8;
 
-        var snapDiv = (computedRads/snapAngles);
+        var snapDiv = (rads/snapAngles);
         var snapMod = snapDiv%1;
         var snapRound = Math.round(snapDiv) * snapAngles;
-        var snapClosest = (1-snapMod)*snapAngles;
+
         if (
-          near(snapClosest + snapAngles/2, snapAngles, -angularThreshold) ||
-          near(snapClosest-snapAngles/2, snapAngles, angularThreshold) ||
-          near(snapClosest + snapAngles/2, snapAngles, angularThreshold)
+          near((snapMod)*snapAngles, snapAngles, angularThreshold) ||
+          near((1-snapMod)*snapAngles, snapAngles, angularThreshold)
         ) {
           var activeLength = activePoint.subtract(lastPoint).length();
           activePoint = new Point(activeLength, 0);
           
-          rads = -snapRound;
-          activePoint.rotate(radsFromZero - Math.PI);
-          activePoint.rotate(-rads);
+          rads = snapRound;
+          activePoint.rotate(radsFromZero);
+          activePoint.rotate(rads);
           activePoint.add(lastPoint);
         }
 
         activePoint.render(delta);
         
         renderDegrees(lastPoint, radsFromZero, rads);
+      }
+
+      if (dragging) {
+        console.log('here', dragging);
       }
 
 
