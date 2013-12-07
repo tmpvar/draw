@@ -565,14 +565,33 @@ requestAnimationFrame(function tick(time) {
       ctx.strokeStyle = '#999';
     }
 
-
     ctx.fill();
     ctx.stroke();
 
     points.forEach(function(point) {
       point.render();
     });
+    console.log(Polygon(points));
 
+    var offset = Polygon(points).rewind(true).dedupe().offset(10);
+    
+    ctx.beginPath();
+    offset.each(function(p, c, n) {
+      ctx.moveTo(p.x, p.y)
+      ctx.lineTo(c.x, c.y);
+    });
+
+    ctx.closePath();
+    ctx.strokeStyle = '#f0f';
+    ctx.stroke();
+
+    offset.each(function(p, c) {
+      ctx.beginPath();
+      ctx.moveTo(c.point.x, c.point.y);
+      ctx.lineTo(c.x, c.y);
+      ctx.strokeStyle = "red";
+      ctx.stroke();
+    });
   });
 
   ctx.strokeStyle = "#ccc";    
@@ -603,7 +622,6 @@ requestAnimationFrame(function tick(time) {
   ctx.stroke();
 
   closestLine();
-
 
   requestAnimationFrame(tick);
 });
