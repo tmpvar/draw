@@ -38,6 +38,7 @@ var term = function(val) {
 var mouse = Vec2(0, 0);
 var intersectionThreshold = 15;
 var angularThreshold = 5;
+var offsetAmount = 10;
 //<!--
 var TAU = Math.PI*2;
 var highlighted = null, hovering = null;
@@ -363,7 +364,6 @@ canvas.addEventListener('mousemove', function(e) {
     activePoint.set(clean.x, clean.y); 
   } else if (dragging) {
     dragging.set(clean.x, clean.y);
-  } else {
   }
 
 });
@@ -571,9 +571,9 @@ requestAnimationFrame(function tick(time) {
     points.forEach(function(point) {
       point.render();
     });
-    console.log(Polygon(points));
 
-    var offset = Polygon(points).rewind(true).dedupe().offset(10);
+
+    var offset = Polygon(points).rewind(true).dedupe().offset(offsetAmount);
     
     ctx.beginPath();
     offset.each(function(p, c, n) {

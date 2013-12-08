@@ -138,6 +138,13 @@ Polygon.prototype = {
     return point;
   },
 
+  scale : function(amount) {
+    this.each(function(p, c) {
+      c.multiply(amount);
+    });
+    return this;
+  },
+
   containsPoint : function(point) {
     var type=0,
         // Avoid intersections with points as they
@@ -216,14 +223,10 @@ Polygon.prototype = {
       var ecross = e1.perpDot(e2);
       var length = delta / Math.sin(Math.acos(e1.dot(e2))/2);
 
-      if (delta > 0) {
-        length = -length;
-      }
+      length = -length;
 
       var angleToZero = lineRadsFromZero(prev, current);
       var rads = lineIntersectionRads(prev, current, next);
-      //var cornerAngle = toTAU(current.subtract(prev, true).angleTo(next.subtract(current, true)));
-      //var angleToCorner = toTAU(current.subtract(prev, true).angleTo(Vec2(1, 0)));
       var bisector = Vec2(length, 0).rotate(angleToZero - rads/2);
 
       if (ecross < 0)
