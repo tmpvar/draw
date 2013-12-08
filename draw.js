@@ -380,6 +380,8 @@ qel('#command').addEventListener('keydown', function(e) {
 document.addEventListener('keydown', function(e) {
   switch (e.keyCode) {
     case 27: // escape
+    case 81:
+    console.log('blah')
       if (document.getElementById('status').style.display === 'block') {
         document.getElementById('status').style.display = 'none';
         return;
