@@ -577,22 +577,41 @@ requestAnimationFrame(function tick(time) {
 
     var offset = Polygon(points).rewind(true).dedupe().offset(offsetAmount);
     
+    var idx = 0;
     ctx.beginPath();
     offset.each(function(p, c, n) {
       ctx.moveTo(p.x, p.y)
       ctx.lineTo(c.x, c.y);
+      ctx.fillText(idx++, p.x + 10, p.y);
     });
 
     ctx.closePath();
     ctx.strokeStyle = '#f0f';
     ctx.stroke();
 
+    ctx.strokeStyle = "red";
     offset.each(function(p, c) {
       ctx.beginPath();
       ctx.moveTo(c.point.x, c.point.y);
       ctx.lineTo(c.x, c.y);
-      ctx.strokeStyle = "red";
       ctx.stroke();
+    });
+
+    var colors =  ['#f00', '#0f0', '#00f'];
+
+    var pruned = offset.pruneSelfIntersections();
+    pruned.forEach(function(poly) {
+      ctx.fillStyle = ctx.strokeStyle = colors.shift();
+      //poly.dedupe().rewind(true)
+      ctx.beginPath();
+      ctx.moveTo(poly.points[0].x, poly.points[0].y)
+
+      poly.each(function(p, c, n) {
+        ctx.lineTo(c.x, c.y);
+      });
+      ctx.closePath();
+      ctx.stroke();
+      ctx.fill();
     });
   });
 

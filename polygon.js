@@ -314,19 +314,60 @@ Polygon.prototype = {
     rootVec.b = (this.points.length-1) + 0.99;
     var root = new Node(rootVec);
     var last = root;
+    var tree = [rootVec];
     selfIntersections.each(function(p, c, n) {
-      console.log(
+      /*console.log(
         belongTo(last.s, last.b, c.s, c.b),
+        belongTo(1-last.s, 1-last.b, 1-c.s, 1-c.b),
+        belongTo(c.s, c.b, last.s, last.b),
+        contain(1-last.s, 1-last.b, 1-c.s, 1-c.b),
         contain(last.s, last.b, c.s, c.b),
-        interfere(last.s, last.b, c.s, c.b)
-      );
+        contain(c.s, c.b, last.s, last.b),
+        interfere(last.s, last.b, c.s, c.b),
+        interfere(c.s, c.b, last.s, last.b)
+      );*/
 
+      //if (!contain(1-last.s, 1-last.b, 1-c.s, 1-c.b)) {
+        tree.push(c);
+      //} else {
+        // collect under children
+      //}
 
     });
 
-    // break them into a tree based on idx.<normalized distance on line>
-    // prune
-    // return multiple polygons
+    var ret = [];
+
+    if (tree.length < 2) {
+      return ret;
+    }
+
+    tree.sort(function(a, b) {
+      return a.s - b.s;
+    });
+
+    for (var i=0; i<tree.length; i+=2) {
+      var poly = [];
+      var next = (i<tree.length-1) ? tree[i+1] : tree[i];
+
+     if (!i) {
+        poly.push(tree[i]);
+        // collect up to the next isect
+        for (var j = Math.floor(tree[i].s); j<=Math.floor(next.s); j++) {
+          poly.push(this.points[j]);
+        }
+
+        poly.push(next);
+        poly.push(poly.push(this.points[Math.floor(tree[i].b)]));
+      } else {
+        poly.push(tree[i])
+        for (var k = Math.floor(tree[i].s+1); k<=Math.floor(tree[i].b); k++) {
+          poly.push(this.points[k]);
+        }
+      }
+
+      ret.push(new Polygon(poly));
+    }
+    return ret;
   },
 
   get length() {
