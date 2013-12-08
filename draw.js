@@ -38,7 +38,7 @@ var term = function(val) {
 var mouse = Vec2(0, 0);
 var intersectionThreshold = 15;
 var angularThreshold = 5;
-var offsetAmount = 10;
+var offsetAmount = -20;
 //<!--
 var TAU = Math.PI*2;
 var highlighted = null, hovering = null;
@@ -548,7 +548,7 @@ requestAnimationFrame(function tick(time) {
   }
 
   if (dragging) {
-    console.log('here', dragging);
+    //console.log('here', dragging);
   }
 
 

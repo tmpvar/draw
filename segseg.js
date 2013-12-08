@@ -30,19 +30,8 @@ window.segseg = function(x1, y1, x2, y2, x3, y3, x4, y4) {
     var p3 = x2;
     var p4 = y2;
 
-    // assume array [x, y]
-    if (p1.length && p1.length === 2) {
-      x1 = p1[0];
-      y1 = p1[1];
-      x2 = p2[0];
-      y2 = p2[1];
-      x3 = p3[0];
-      y3 = p3[1];
-      x4 = p4[0];
-      y4 = p4[1];
-
     // assume object with obj.x and obj.y
-    } else {
+    if (p1.x) {
       x1 = p1.x;
       y1 = p1.y;
       x2 = p2.x;
@@ -51,6 +40,17 @@ window.segseg = function(x1, y1, x2, y2, x3, y3, x4, y4) {
       y3 = p3.y;
       x4 = p4.x;
       y4 = p4.y;
+
+    // assume array [x, y]
+    } else if (p1.length && p1.length === 2) {
+      x1 = p1[0];
+      y1 = p1[1];
+      x2 = p2[0];
+      y2 = p2[1];
+      x3 = p3[0];
+      y3 = p3[1];
+      x4 = p4[0];
+      y4 = p4[1];
     }
   }
 

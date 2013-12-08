@@ -44,6 +44,12 @@ Polygon.prototype = {
     return this;
   },
 
+  remove : function(vec) {
+    this.points = this.points.filter(function(point) {
+      return point!==vec;
+    });
+  },
+
   // Remove identical points occurring one after the other
   clean : function() {
     var last = this.points[this.points.length-1];
@@ -244,56 +250,83 @@ Polygon.prototype = {
     return Polygon(ret);
   },
 
-  offset1 : function(delta) {
+  line : function(idx) {
+    var end = (idx === this.points.length-1) ? 
+              this.points[0] :
+              this.points[idx+1];
 
-    var ret = [],
-        last = null,
-        bisectors = [];
+    return [this.points[idx], end];
+  },
 
-    // Compute bisectors
-    this.each(function(prev, current, next, idx) {
-      var e1 = current.subtract(prev, true).normalize();
-      var e2 = current.subtract(next, true).normalize();
-      var e = e1.add(e2, true).normalize();
+  lines : function(fn) {
+    var idx = 0;
+    this.each(function(p, start, end) {
+      fn(start, end, idx++);
+    });
+  },
 
-      var diff = delta / Math.sin(Math.acos(e1.dot(e2))/2);
+  selfIntersections : function() {
+    var ret = [];
 
-      var inter = diff;//e.dot(Vec2(diff, diff)); 
-      var o;
-      if (e1.perpDot(e2) < 0) {
-        o = current.add(Vec2(inter, inter), true);
-      } else {
-        o = current.subtract(Vec2(inter, inter), true);
-      }
-      
-      o.point = current;
+    // TODO: use a faster algorithm. Bentley–Ottmann is a good first choice
+    this.lines(function(s, e, i) {
+      this.lines(function(s2, e2, i2) {
 
-      //ret.push(o);
+        if (!s2.equal(e) && !s2.equal(s) && !e2.equal(s) && !e2.equal(e) && i+1 < i2) {
+          var isect = segseg(s, e, s2, e2);
+          // self-intersection
+          if (isect && isect !== true) {
+            var vec = Vec2.fromArray(isect);
+            // TODO: wow, this is inneficient but is crucial for creating the
+            //       tree later on.
+            vec.s = i + (s.subtract(vec, true).length() / s.subtract(e, true).length())
+            vec.b = i2 + (s2.subtract(vec, true).length() / s2.subtract(e2, true).length())
 
-      
+            ret.push(vec);
+          }
+        }
+      });
+    }.bind(this));
+    return Polygon(ret);
+  },
 
-      if (delta > 0) {
-        length = -length;
-      }
+  pruneSelfIntersections : function() {
+    var selfIntersections = this.selfIntersections();
 
-      var cornerAngle = toTAU(current.subtract(prev, true).angleTo(next.subtract(current, true)));
-      var angleToCorner = toTAU(current.subtract(prev, true).angleTo(Vec2(1, 0)));
-      var bisector = Vec2(length, 0).rotate(TAU/4 + cornerAngle/2 - angleToCorner);
+    var belongTo = function(s1, b1, s2, b2) {
+      return s1 > s2 && b1 < b2
+    }
 
-      if ((delta < 0 && cornerAngle - PI < 0) ||
-          (delta > 0 && cornerAngle - PI > 0))
-      {
-        bisector.add(current);
-      } else {
-        bisector = current.subtract(bisector, true);
-      }
-      bisector.cornerAngle = cornerAngle;
-      current.bisector = bisector;
-      bisector.point = current;
-      ret.push(bisector);
+    var contain = function(s1, b1, s2, b2) {
+      return s1 < s2 && b1 > b2;
+    }
+
+    var interfere = function(s1, b1, s2, b2) {
+      return (s1 < s2 && s2 < b1 && b2 > b1) || (s2 < b1 && b1 < b2 && s1 < s2); 
+    }
+
+    function Node(value) {
+      this.value = value;
+      this.children = [];
+    }
+    var rootVec = this.points[0].clone();
+    rootVec.s = 0;
+    rootVec.b = (this.points.length-1) + 0.99;
+    var root = new Node(rootVec);
+    var last = root;
+    selfIntersections.each(function(p, c, n) {
+      console.log(
+        belongTo(last.s, last.b, c.s, c.b),
+        contain(last.s, last.b, c.s, c.b),
+        interfere(last.s, last.b, c.s, c.b)
+      );
+
+
     });
 
-    return Polygon(ret);
+    // break them into a tree based on idx.<normalized distance on line>
+    // prune
+    // return multiple polygons
   },
 
   get length() {
