@@ -23,11 +23,17 @@ Polygon.prototype = {
     for (var i = 0; i<this.points.length; i++) {
       var prev = i>0 ? this.points[i-1] : this.points[this.points.length-1];
       var next = i<this.points.length-1 ? this.points[i+1] : this.points[0];
-      if (fn(prev, this.points[i], next, i) === false) {
+      if (fn.call(this, prev, this.points[i], next, i) === false) {
         break;
       }
     }
     return this;
+  },
+
+  point : function(idx) {
+    var el = idx%(this.points.length-1);
+    console.log(idx, el, this.points.length);
+    return this.points[el];
   },
 
   dedupe : function() {
@@ -218,7 +224,8 @@ Polygon.prototype = {
 
   offset : function(delta) {
 
-    var ret = [],
+    var raw = [],
+        ret = [],
         last = null,
         bisectors = [];
 
@@ -244,10 +251,40 @@ Polygon.prototype = {
       bisector.cornerAngle = rads;
       current.bisector = bisector;
       bisector.point = current;
-      ret.push(bisector);
+      raw.push(bisector);
+    });
+
+
+    
+    Polygon(raw).each(function(p, c, n, i) {
+
+      var isect = segseg(c, c.point, n, n.point);
+
+      if (isect && isect !== true) {
+        // This means that the offset is self-intersecting
+        // find where and use that as the current vec instead
+console.log(i, this.point(i+2));
+        var isect2 = segseg(
+          p,
+          c,
+          n,
+          this.point(i+2)
+        );
+
+        if (isect2 && isect2 !== false) {
+          isect = isect2;
+        }
+
+        this.remove(c);
+        c.set(isect[0], isect[1]);
+
+      }
+
+      ret.push(c)
     });
 
     return Polygon(ret);
+
   },
 
   line : function(idx) {
@@ -316,7 +353,7 @@ Polygon.prototype = {
     var last = root;
     var tree = [rootVec];
     selfIntersections.each(function(p, c, n) {
-      /*console.log(
+      console.log(
         belongTo(last.s, last.b, c.s, c.b),
         belongTo(1-last.s, 1-last.b, 1-c.s, 1-c.b),
         belongTo(c.s, c.b, last.s, last.b),
@@ -325,7 +362,7 @@ Polygon.prototype = {
         contain(c.s, c.b, last.s, last.b),
         interfere(last.s, last.b, c.s, c.b),
         interfere(c.s, c.b, last.s, last.b)
-      );*/
+      );
 
       //if (!contain(1-last.s, 1-last.b, 1-c.s, 1-c.b)) {
         tree.push(c);
@@ -347,17 +384,17 @@ Polygon.prototype = {
 
     for (var i=0; i<tree.length; i+=2) {
       var poly = [];
-      var next = (i<tree.length-1) ? tree[i+1] : tree[i];
+      var next = (i<tree.length-1) ? tree[i+1] : null;
 
-     if (!i) {
-        poly.push(tree[i]);
+     if (next) {
+
         // collect up to the next isect
         for (var j = Math.floor(tree[i].s); j<=Math.floor(next.s); j++) {
           poly.push(this.points[j]);
         }
 
         poly.push(next);
-        poly.push(poly.push(this.points[Math.floor(tree[i].b)]));
+        poly.push(this.points[Math.floor(tree[i].b)]);
       } else {
         poly.push(tree[i])
         for (var k = Math.floor(tree[i].s+1); k<=Math.floor(tree[i].b); k++) {
@@ -372,12 +409,6 @@ Polygon.prototype = {
 
   get length() {
     return this.points.length
-  },
-
-  point : function(index) {
-    if (index >= 0 && index < this.points.length) {
-      return this.points[index];
-    }
   },
 
   clone : function() {

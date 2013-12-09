@@ -176,7 +176,23 @@ var ctx = canvas.getContext('2d');
 
 var points = [];
 
-var paths = [];
+var paths = [
+ // [
+/*    new Point(-44,-171.5),
+    new Point(-52,-71.5),
+    new Point(-109.00791,-92.944138),
+    new Point(-109.00791,-20.529813),
+    new Point(-18,-33.5),
+    new Point(-42.000035,46.568672),
+    new Point(24.943186,46.568672),
+    new Point(26,-45.5),
+    new Point(99,-20.5),
+    new Point(99,-88.5),
+    new Point(26,-90.5),
+    new Point(27.007042,-171.5),
+*/
+  //]
+];
 
 var scale = 1;
 var translation = { x : 0, y: 0 };
@@ -597,7 +613,7 @@ requestAnimationFrame(function tick(time) {
       ctx.stroke();
     });
 
-    var colors =  ['#f00', '#0f0', '#00f'];
+    var colors =  ['#f00', '#0f0', '#00f', 'yellow', 'orange'];
 
     var pruned = offset.pruneSelfIntersections();
     pruned.forEach(function(poly) {
