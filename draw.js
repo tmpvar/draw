@@ -1,7 +1,6 @@
 /*
 
   BUGS:
-    * Initial point is locked at 180
 
   TODO: 
 
@@ -85,13 +84,11 @@ Point.prototype.render = function(diff) {
   var stroke = this.color.slice();
   stroke[3] += .1;
   ctx.strokeStyle = rgba(stroke);
-  
 
-  if (mouse.distance(this) < intersectionThreshold) {
+  if (hovering === this) {
     ctx.beginPath();
       ctx.arc(this.x, this.y, this.width*2.5, TAU, false);
     ctx.closePath();
-    hovering = this;
   } else {
     ctx.beginPath();
      ctx.arc(this.x, this.y, this.width, TAU, false);
@@ -164,30 +161,6 @@ Point.relationshipModes = {
   }
 }
 
-
-function Line(start, end) {
-  this.start = start || null;
-  this.end = end || null;
-  Line.instances.push(this);
-}
-Line.instances = [];
-Line.prototype.hovered = false;
-Line.hoveredColor = 'red';
-Line.color = 'green';
-Line.prototype.render = function(delta) {
-  ctx.beginPath();
-  ctx.moveTo(this.start.x, this.start.y);
-  ctx.lineTo(this.end.x, this.end.y);
-  ctx.stroke();
-}
-
-function Mode() {
-
-
-}
-
-
-
 var lastTick = 0;
 var canvas = document.getElementById('canvas');
 var ctx = canvas.getContext('2d');
@@ -229,10 +202,19 @@ var lines = function(array, fn) {
 }    
 
 var states = {};
+var renderHelpers = null;
 var closestLine = function() {
   var closest = null;
-  paths.forEach(function(path) {
+  renderHelpers = null;
+  states = {};
+  hovering = null;
+  paths.concat([points]).forEach(function(path) {
     lines(path, function(start, end) {
+      if (mouse.distance(start) < intersectionThreshold) {
+        hovering = start;
+      }
+
+
       var d = end.subtract(start, true);
       var f = start.subtract(mouse, true);
       var r = intersectionThreshold;
@@ -274,24 +256,27 @@ var closestLine = function() {
           }
           dn.multiply(d.length() * use);
           dn.add(start);
-          ctx.save();
-            ctx.beginPath();
-            ctx.translate(dn.x, dn.y);
-            ctx.arc(0, 0, 5, TAU, false);
-            ctx.strokeStyle = "rgba(0,255,0, .2)";
-            ctx.stroke();
-          ctx.restore();
 
-          if (Math.abs(use - .5) < .1) {
+          renderHelpers = function(time) {
             ctx.save();
               ctx.beginPath();
-              var center = dnc.multiply(d.length() * .5, true).add(start);
-              ctx.translate(center.x, center.y);
-              ctx.fillStyle = "orange";
-              ctx.rotate(TAU/4);
+              ctx.translate(dn.x, dn.y);
               ctx.arc(0, 0, 5, TAU, false);
-              ctx.fill();
+              ctx.strokeStyle = "rgba(0,255,0, .2)";
+              ctx.stroke();
             ctx.restore();
+
+            if (Math.abs(use - .5) < .1) {
+              ctx.save();
+                ctx.beginPath();
+                var center = dnc.multiply(d.length() * .5, true).add(start);
+                ctx.translate(center.x, center.y);
+                ctx.fillStyle = "orange";
+                ctx.rotate(TAU/4);
+                ctx.arc(0, 0, 5, TAU, false);
+                ctx.fill();
+              ctx.restore();
+            }
           }
         }
       }
@@ -349,7 +334,7 @@ canvas.addEventListener('mousedown', function(e) {
 
 canvas.addEventListener('mouseup', function(e) {
   queueFrame();
-  if (activePoint && hovering && !highlighted.isAutoCentering) {
+  if (activePoint && hovering && (!highlighted || !highlighted.isAutoCentering)) {
     activePoint = hovering;
     highlighted = null;  
   }
@@ -380,7 +365,7 @@ canvas.addEventListener('mouseup', function(e) {
        activePoint = new Point(e.x, e.y);
      }
    } else if (hovering) {
-     if (!highlighted.isAutoCentering) {
+     if (!highlighted || !highlighted.isAutoCentering) {
        dragging = hovering;
        hovering = null;
      }
@@ -396,6 +381,7 @@ canvas.addEventListener('mousemove', function(e) {
   mouse.set(clean.x, clean.y);
   mouse.raw = Vec2(e.x, e.y);
 
+  closestLine();
   queueFrame();
 
   if (activePoint) {
@@ -440,7 +426,7 @@ document.addEventListener('keydown', function(e) {
         document.querySelector('#status input').focus();
         e.preventDefault();
       }
-     
+
     break;
   }
 });
@@ -475,49 +461,49 @@ var near = function(a, b, threshold) {
 };
 
 var renderDegrees = function(point, radsFromZero, rads) { 
-    var degs = Math.abs(rads *(360/TAU));
-    
-    // render degrees
-    ctx.beginPath();
+  var degs = Math.abs(rads *(360/TAU));
+  
+  // render degrees
+  ctx.beginPath();
 
-      ctx.save();
+    ctx.save();
+      ctx.translate(point.x, point.y);
+      ctx.beginPath();
+      var radius = 20/scale; 
+        rads < 0 ? ctx.rotate(radsFromZero) : ctx.rotate(radsFromZero + rads);;
+        ctx.arc(0, 0, radius, (rads < 0) ? rads : -rads, false);
+        ctx.lineTo(0, 0);
+
+      ctx.closePath();
+               
+      ctx.strokeStyle = "rgba(0, 255, 0, .2)";
+      ctx.fillStyle = "rgba(0, 255, 0, .05)";
+      ctx.stroke();
+      ctx.fill();
+    ctx.restore();
+    ctx.save();
+      ctx.beginPath();
+        var bisector = Vec2(radius * 3/scale, 0).rotate(radsFromZero + (rads<0) ? rads/2 : rads/2); 
         ctx.translate(point.x, point.y);
-        ctx.beginPath();
-        var radius = 20/scale; 
-          rads < 0 ? ctx.rotate(radsFromZero) : ctx.rotate(radsFromZero + rads);;
-          ctx.arc(0, 0, radius, (rads < 0) ? rads : -rads, false);
-          ctx.lineTo(0, 0);
-
-        ctx.closePath();
-                 
-        ctx.strokeStyle = "rgba(0, 255, 0, .2)";
-        ctx.fillStyle = "rgba(0, 255, 0, .05)";
+        
+        ctx.moveTo(0, 0);
+        ctx.lineTo(bisector.x, bisector.y);
         ctx.stroke();
-        ctx.fill();
-      ctx.restore();
-      ctx.save();
-        ctx.beginPath();
-          var bisector = Vec2(radius * 3/scale, 0).rotate(radsFromZero + (rads<0) ? rads/2 : rads/2); 
-          ctx.translate(point.x, point.y);
-          
-          ctx.moveTo(0, 0);
-          ctx.lineTo(bisector.x, bisector.y);
-          ctx.stroke();
-          
-          ctx.translate(bisector.x, bisector.y);
+        
+        ctx.translate(bisector.x, bisector.y);
 
-          ctx.fillStyle="rgba(0, 255, 0, .7)";
-          ctx.font = (12/scale) + 'px sans-serif';
-          var text = fixed(degs, 1) + degreeSymbol;
-          var textWidth = ctx.measureText(text).width;
-          ctx.fillText(text, 5/scale, -6/scale);
+        ctx.fillStyle="rgba(0, 255, 0, .7)";
+        ctx.font = (12/scale) + 'px sans-serif';
+        var text = fixed(degs, 1) + degreeSymbol;
+        var textWidth = ctx.measureText(text).width;
+        ctx.fillText(text, 5/scale, -6/scale);
 
-          ctx.moveTo(0, 0);
-          ctx.lineTo(textWidth+5/scale, 0);
-          ctx.stroke();
+        ctx.moveTo(0, 0);
+        ctx.lineTo(textWidth+5/scale, 0);
+        ctx.stroke();
 
-      ctx.restore();
-    ctx.closePath();
+    ctx.restore();
+  ctx.closePath();
 }
 
 var lineRadsFromZero = function(start, end) {
@@ -531,8 +517,6 @@ var lineIntersectionRads = function(start, shared, end) {
 };
 
 function render(time) {
-  highlighted = false; 
-  hovering = false;
   canvas.width = 0;
   canvas.width = window.innerWidth;
   canvas.height = window.innerHeight;
@@ -551,7 +535,7 @@ function render(time) {
   if (activePoint) {
     
     var lastPoint = points[points.length-1];
-    var prevPoint = (points.length > 1) ? points[points.length-2] : Vec2(100, lastPoint.y);
+    var prevPoint = (points.length > 2) ? points[points.length-2] : Vec2(100, lastPoint.y);
 
     var pointVec = prevPoint.subtract(lastPoint, true).normalize();
     var activeVec = mouse.subtract(lastPoint, true).normalize();
@@ -586,7 +570,7 @@ function render(time) {
   }
 
   if (dragging) {
-    //console.log('here', dragging);
+  //  console.log('dragging', dragging);
   }
 
 
@@ -612,46 +596,54 @@ function render(time) {
       point.render();
     });
 
-
-    var offset = Polygon(points).rewind(true).dedupe().offset(offsetAmount);
+    var poly = Polygon(points).rewind(true).dedupe();
+    if (poly.length > 2) {
+      try {
+        var offset = poly.offset(offsetAmount);
+      } catch (e) {
+        console.log(e.stack);
+        return;
+      }
     
-    var idx = 0;
-    ctx.beginPath();
-    offset.each(function(p, c, n) {
-      ctx.moveTo(p.x, p.y)
-      ctx.lineTo(c.x, c.y);
-      ctx.fillText(idx++, p.x + 10, p.y);
-    });
-
-    ctx.closePath();
-    ctx.strokeStyle = '#f0f';
-    ctx.stroke();
-
-    ctx.strokeStyle = "red";
-    offset.each(function(p, c) {
+      var idx = 0;
       ctx.beginPath();
-      ctx.moveTo(c.point.x, c.point.y);
-      ctx.lineTo(c.x, c.y);
-      ctx.stroke();
-    });
-
-    var colors =  ['#f00', '#0f0', '#00f', 'yellow', 'orange'];
-
-    var pruned = offset.pruneSelfIntersections();
-    pruned.forEach(function(poly) {
-      ctx.fillStyle = ctx.strokeStyle = colors.shift();
-      //poly.dedupe().rewind(true)
-      ctx.beginPath();
-      ctx.moveTo(poly.points[0].x, poly.points[0].y)
-
-      poly.each(function(p, c, n) {
+      offset.each(function(p, c, n) {
+        ctx.moveTo(p.x, p.y)
         ctx.lineTo(c.x, c.y);
+        ctx.fillText(idx++, p.x + 10, p.y);
       });
+
       ctx.closePath();
+      ctx.strokeStyle = '#f0f';
       ctx.stroke();
-      ctx.fill();
-    });
+
+      ctx.strokeStyle = "red";
+      offset.each(function(p, c) {
+        ctx.beginPath();
+        ctx.moveTo(c.point.x, c.point.y);
+        ctx.lineTo(c.x, c.y);
+        ctx.stroke();
+      });
+
+      var colors =  ['#f00', '#0f0', '#00f', 'yellow', 'orange'];
+
+      var pruned = offset.pruneSelfIntersections();
+      pruned.forEach(function(poly) {
+        ctx.fillStyle = ctx.strokeStyle = colors.shift();
+        //poly.dedupe().rewind(true)
+        ctx.beginPath();
+        ctx.moveTo(poly.points[0].x, poly.points[0].y)
+
+        poly.each(function(p, c, n) {
+          ctx.lineTo(c.x, c.y);
+        });
+        ctx.closePath();
+        ctx.stroke();
+        ctx.fill();
+      });
+    }
   });
+  
 
   ctx.strokeStyle = "#ccc";    
   ctx.beginPath();
@@ -680,5 +672,5 @@ function render(time) {
   ctx.lineTo(0, 10);
   ctx.stroke();
 
-  closestLine();
+  renderHelpers && renderHelpers();
 };
