@@ -31,8 +31,11 @@ Polygon.prototype = {
   },
 
   point : function(idx) {
-    var el = idx%(this.points.length-1);
-    console.log(idx, el, this.points.length);
+    var el = idx%(this.points.length);
+    if (el<0) {
+      el = this.points.length + el;
+    }
+
     return this.points[el];
   },
 
@@ -346,6 +349,9 @@ console.log(i, this.point(i+2));
       this.value = value;
       this.children = [];
     }
+
+    // TODO: create tree based on relationship operations
+
     var rootVec = this.points[0].clone();
     rootVec.s = 0;
     rootVec.b = (this.points.length-1) + 0.99;
@@ -354,18 +360,14 @@ console.log(i, this.point(i+2));
     var tree = [rootVec];
     selfIntersections.each(function(p, c, n) {
       console.log(
-        belongTo(last.s, last.b, c.s, c.b),
-        belongTo(1-last.s, 1-last.b, 1-c.s, 1-c.b),
-        belongTo(c.s, c.b, last.s, last.b),
-        contain(1-last.s, 1-last.b, 1-c.s, 1-c.b),
-        contain(last.s, last.b, c.s, c.b),
-        contain(c.s, c.b, last.s, last.b),
-        interfere(last.s, last.b, c.s, c.b),
-        interfere(c.s, c.b, last.s, last.b)
+        'belongTo:', belongTo(last.s, last.b, c.s, c.b),
+        'contain:', contain(last.s, last.b, c.s, c.b),
+        'interfere:', interfere(last.s, last.b, c.s, c.b)
       );
 
       //if (!contain(1-last.s, 1-last.b, 1-c.s, 1-c.b)) {
         tree.push(c);
+        last = c;
       //} else {
         // collect under children
       //}
