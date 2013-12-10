@@ -1,4 +1,8 @@
 /*
+
+  BUGS:
+    * Initial point is locked at 180
+
   TODO: 
 
     * Snapping
@@ -35,6 +39,20 @@ var term = function(val) {
   li.innerHTML = val;
   document.getElementById('terminal').appendChild(li);
 }
+
+var frameQueued = false;
+var queueFrame = function() {
+  if (!frameQueued) {
+    frameQueued = true;
+    requestAnimationFrame(function(time) {
+      frameQueued = false;
+      render(time);
+    });
+  }
+}
+
+queueFrame();
+
 var mouse = Vec2(0, 0);
 var intersectionThreshold = 15;
 var angularThreshold = 5;
@@ -318,6 +336,7 @@ Point.trackingModes = {
 
 var activePoint = null, dragging = null;
 canvas.addEventListener('mousedown', function(e) {
+  queueFrame();
   if (hovering) {
     dragging = hovering;
 
@@ -329,6 +348,7 @@ canvas.addEventListener('mousedown', function(e) {
 });
 
 canvas.addEventListener('mouseup', function(e) {
+  queueFrame();
   if (activePoint && hovering && !highlighted.isAutoCentering) {
     activePoint = hovering;
     highlighted = null;  
@@ -376,6 +396,8 @@ canvas.addEventListener('mousemove', function(e) {
   mouse.set(clean.x, clean.y);
   mouse.raw = Vec2(e.x, e.y);
 
+  queueFrame();
+
   if (activePoint) {
     activePoint.set(clean.x, clean.y); 
   } else if (dragging) {
@@ -397,7 +419,6 @@ document.addEventListener('keydown', function(e) {
   switch (e.keyCode) {
     case 27: // escape
     case 81:
-    console.log('blah')
       if (document.getElementById('status').style.display === 'block') {
         document.getElementById('status').style.display = 'none';
         return;
@@ -409,6 +430,7 @@ document.addEventListener('keydown', function(e) {
 
       points = [];
       activePoint = null;
+      queueFrame();
     break;
 
     case 186:
@@ -508,7 +530,7 @@ var lineIntersectionRads = function(start, shared, end) {
   return activeVec.angleTo(pointVec);
 };
 
-requestAnimationFrame(function tick(time) {
+function render(time) {
   highlighted = false; 
   hovering = false;
   canvas.width = 0;
@@ -659,6 +681,4 @@ requestAnimationFrame(function tick(time) {
   ctx.stroke();
 
   closestLine();
-
-  requestAnimationFrame(tick);
-});
+};
