@@ -324,11 +324,6 @@ canvas.addEventListener('mousedown', function(e) {
   queueFrame();
   if (hovering) {
     dragging = hovering;
-
-  } else if (!activePoint) {
-    e = fixMouse(e);
-    points.push(new Point(e.x, e.y));
-    activePoint = new Point(e.x, e.y);
   }
 });
 
