@@ -1,6 +1,7 @@
 /*
 
   BUGS:
+    * last line segment in poly is not tracked for snapping
 
   TODO: 
 
@@ -8,19 +9,18 @@
       * Helpers
         * Endpoints lines
         * Midpoints lines
+      * Dragging
+        * angular snaps
+
 
     * modes
       * selection mode by default
       * line mode until <esc> out of it
-     
-    * refactor highlight functionality to use mouse move instead of 
-      checking every point every render cycle
 
     * Add points to existing geometry
       * compute circle -> line intersection much like existing point check
       * handle click and add point where isect or closest occurs
     
-
     * Dimensioning
       * Bind to point's change
       * Apply input'd dimension to points
@@ -194,24 +194,41 @@ var fixMouse = function(e) {
   };
 }
 
-var lines = function(array, fn) {
+var lines = function(array, wrap, fn) {
   for (var i=0; i<array.length; i++) {
-    var next = (i===array.length-1) ? array[0] : array[i+1];
+
+    var next = null;
+    if (i===array.length-1) {
+      if (wrap) {
+       next = array[0];
+      }
+    } else {
+      next = array[i+1];
+    }
+
     fn(array[i], next);
   } 
 }    
 
 var states = {};
-var renderHelpers = null;
+var renderHelpers = null; 
 var closestLine = function() {
   var closest = null;
   renderHelpers = null;
   states = {};
   hovering = null;
-  paths.concat([points]).forEach(function(path) {
-    lines(path, function(start, end) {
+  paths.concat([points]).forEach(function(path, idx) {
+    lines(path, true, function(start, end) {
+      if (!end || end === activePoint || start === activePoint) {
+        return;
+      }
+
       if (mouse.distance(start) < intersectionThreshold) {
         hovering = start;
+      }
+
+      if (mouse.distance(end) < intersectionThreshold) {
+        hovering = end;
       }
 
 
@@ -238,8 +255,9 @@ var closestLine = function() {
         } else if (t2 >= 0 && t2 <= 1) {
           use = t2;
         }
-        if (use) {
 
+
+        if (use) {
           var snapCenter = Math.abs(use - .5) < .1;
           var dn = d.clone();
           dn.normalize();
@@ -538,7 +556,6 @@ function render(time) {
        
     var radsFromZero = lineRadsFromZero(lastPoint, prevPoint);
 
-    var inverse = rads < 0;
     var angularThreshold = TAU/32;
     var snapAngles = TAU/8;
 
@@ -587,8 +604,18 @@ function render(time) {
     ctx.fill();
     ctx.stroke();
 
-    points.forEach(function(point) {
-      point.render();
+    Polygon(points).each(function(p, c, n) {
+
+      if (hovering === c) {
+        // TODO: move things like this into the point helpers   
+        renderDegrees(
+          c,
+          lineRadsFromZero(c, p),
+          c.subtract(p, true).normalize().angleTo(c.subtract(n, true).normalize())
+        );
+      }
+
+      c.render();
     });
 
     var poly = Polygon(points).rewind(true).dedupe();
@@ -625,7 +652,7 @@ function render(time) {
       var pruned = offset.pruneSelfIntersections();
       pruned.forEach(function(poly) {
         ctx.fillStyle = ctx.strokeStyle = colors.shift();
-        //poly.dedupe().rewind(true)
+
         ctx.beginPath();
         ctx.moveTo(poly.points[0].x, poly.points[0].y)
 
