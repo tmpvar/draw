@@ -499,7 +499,7 @@ var renderDegrees = function(point, radsFromZero, rads) {
     ctx.restore();
     ctx.save();
       ctx.beginPath();
-        var bisector = Vec2(radius * 3/scale, 0).rotate(radsFromZero + (rads<0) ? rads/2 : rads/2); 
+        var bisector = Vec2(radius * 3/scale, 0).rotate(radsFromZero + rads/2 + Math.PI); 
         ctx.translate(point.x, point.y);
         
         ctx.moveTo(0, 0);
