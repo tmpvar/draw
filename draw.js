@@ -58,7 +58,7 @@ var angularThreshold = 5;
 var offsetAmount = -20;
 //<!--
 var TAU = Math.PI*2;
-var highlighted = null, hovering = null;
+var highlighted = null, hovering = null, hoveringMeta;
 var rgba = function(array) {
   return 'rgba(' + array.join(',') + ')';
 };
@@ -206,7 +206,7 @@ var lines = function(array, wrap, fn) {
       next = array[i+1];
     }
 
-    fn(array[i], next);
+    fn(array[i], next, i);
   } 
 }    
 
@@ -217,18 +217,21 @@ var closestLine = function() {
   renderHelpers = null;
   states = {};
   hovering = null;
+  hoveringMeta = null;
   paths.concat([points]).forEach(function(path, idx) {
-    lines(path, true, function(start, end) {
+    lines(path, true, function(start, end, i) {
       if (!end || end === activePoint || start === activePoint) {
         return;
       }
 
       if (mouse.distance(start) < intersectionThreshold) {
         hovering = start;
+        hoveringMeta = { array: path, index: i };
       }
 
       if (mouse.distance(end) < intersectionThreshold) {
         hovering = end;
+        hoveringMeta = { array: path, index: i };
       }
 
 
@@ -545,40 +548,58 @@ function render(time) {
   var delta = time-lastTick;
   lastTick = time;
 
-  if (activePoint) {
-    
-    var lastPoint = points[points.length-1];
-    var prevPoint = (points.length > 2) ? points[points.length-2] : Vec2(100, lastPoint.y);
+  var trackingPoint = activePoint || dragging || null;
 
-    var pointVec = prevPoint.subtract(lastPoint, true).normalize();
-    var activeVec = mouse.subtract(lastPoint, true).normalize();
-    var rads = pointVec.angleTo(activeVec);
-       
-    var radsFromZero = lineRadsFromZero(lastPoint, prevPoint);
+  if (trackingPoint) {
+    var rads = false, radsFromZero, lastPoint;
+   
 
-    var angularThreshold = TAU/32;
-    var snapAngles = TAU/8;
-
-    var snapDiv = (rads/snapAngles);
-    var snapMod = snapDiv%1;
-    var snapRound = Math.round(snapDiv) * snapAngles;
-
-    if (
-      near((snapMod)*snapAngles, snapAngles, angularThreshold) ||
-      near((1-snapMod)*snapAngles, snapAngles, angularThreshold)
-    ) {
-      var activeLength = activePoint.subtract(lastPoint).length();
-      activePoint = new Point(activeLength, 0);
+    if (activePoint) {
+      lastPoint = points[points.length-1];
+      var prevPoint = (points.length > 2) ? points[points.length-2] : Vec2(100, lastPoint.y);
+      var activeVec = mouse.subtract(lastPoint, true).normalize();
+      var pointVec = prevPoint.subtract(lastPoint, true).normalize();
       
-      rads = snapRound;
-      activePoint.rotate(radsFromZero);
-      activePoint.rotate(rads);
-      activePoint.add(lastPoint);
+      rads = pointVec.angleTo(activeVec);   
+      radsFromZero = lineRadsFromZero(lastPoint, prevPoint);
+    } else if (hoveringMeta) {
+      var tpoly = Polygon(hoveringMeta.array);
+      lastPoint = tpoly.point(hoveringMeta.index-1);
+      var n = tpoly.point(hoveringMeta.index+1);
+
+      radsFromZero = lineRadsFromZero(trackingPoint, lastPoint),
+      rads2 = trackingPoint.subtract(lastPoint, true).normalize().angleTo(
+        n.subtract(trackingPoint, true).normalize()
+      );
+      console.log(rads2, hoveringMeta.index);
+
     }
 
-    activePoint.render(delta);
-    
-    renderDegrees(lastPoint, radsFromZero, rads);
+    if (rads !== false) {
+      var angularThreshold = TAU/32;
+      var snapAngles = TAU/8;
+
+      var snapDiv = (rads/snapAngles);
+      var snapMod = snapDiv%1;
+      var snapRound = Math.round(snapDiv) * snapAngles;
+
+      if (
+        near((snapMod)*snapAngles, snapAngles, angularThreshold) ||
+        near((1-snapMod)*snapAngles, snapAngles, angularThreshold)
+      ) {
+        var activeLength = trackingPoint.subtract(lastPoint).length();
+        trackingPoint.set(activeLength, 0);
+        
+        rads = snapRound;
+        trackingPoint.rotate(radsFromZero);
+        trackingPoint.rotate(rads);
+        trackingPoint.add(lastPoint);
+      }
+
+      trackingPoint.render(delta);
+      
+      renderDegrees(lastPoint || trackingPoint, radsFromZero, rads);
+    }
   }
 
   if (dragging) {

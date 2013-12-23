@@ -266,7 +266,7 @@ Polygon.prototype = {
       if (isect && isect !== true) {
         // This means that the offset is self-intersecting
         // find where and use that as the current vec instead
-console.log(i, this.point(i+2));
+
         var isect2 = segseg(
           p,
           c,
