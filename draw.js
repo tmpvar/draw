@@ -1,3 +1,7 @@
+
+var Vec2 = require('vec2');
+var Polygon = require('polygon');
+var segseg = require('segseg');
 /*
 
   BUGS:
@@ -636,7 +640,7 @@ function render(time) {
         );
       }
 
-      c.render();
+      c.render && c.render();
     });
 
     var poly = Polygon(points).rewind(true).dedupe();

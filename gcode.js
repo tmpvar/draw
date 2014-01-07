@@ -1,6 +1,6 @@
 
 // TODO: don't reach across the global
-window.gcode = function(offset, scale, materialHeight, depthPerPass, feed, workCoords) {
+module.exports = function(paths, offset, scale, materialHeight, depthPerPass, feed, workCoords) {
   var out = [
     '$H',
     'M4 S2000',
