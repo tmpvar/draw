@@ -504,7 +504,7 @@ var renderDegrees = function(point, radsFromZero, rads) {
     ctx.restore();
     ctx.save();
       ctx.beginPath();
-        var bisector = Vec2(radius * 3/scale, 0).rotate(radsFromZero + (rads<0) ? rads/2 : rads/2); 
+        var bisector = Vec2(radius * 3/scale, 0).rotate(radsFromZero + rads/2 + Math.PI); 
         ctx.translate(point.x, point.y);
         
         ctx.moveTo(0, 0);
@@ -723,7 +723,516 @@ function render(time) {
   renderHelpers && renderHelpers();
 };
 
-},{"polygon":4,"segseg":5,"vec2":6}],2:[function(require,module,exports){
+},{"polygon":2,"segseg":3,"vec2":4}],2:[function(require,module,exports){
+var Vec2 = require('vec2');
+var segseg = require('segseg');
+var PI = Math.PI;
+var TAU = PI*2;
+var toTAU = function(rads) {
+  if (rads<0) {
+    rads += TAU;
+  }
+
+  return rads;
+};
+
+
+function Polygon(points) {
+  if (points instanceof Polygon) {
+    return points;
+  }
+
+  if (!(this instanceof Polygon)) {
+    return new Polygon(points);
+  }
+
+  if (!Array.isArray(points)) {
+    points = (points) ? [points] : [];
+  }
+
+  this.points = points.map(function(point) {
+    if (Array.isArray(point)) {
+      return Vec2.fromArray(point);
+    } else if (!(point instanceof Vec2)) {
+      if (typeof point.x !== 'undefined' &&
+          typeof point.y !== 'undefined')
+      {
+        return Vec2(point.x, point.y);
+      }
+    } else {
+      return point;
+    }
+  });
+}
+
+Polygon.prototype = {
+  each : function(fn) {
+    for (var i = 0; i<this.points.length; i++) {
+      if (fn.call(this, this.point(i-1), this.point(i), this.point(i+1), i) === false) {
+        break;
+      }
+    }
+    return this;
+  },
+
+  point : function(idx) {
+    var el = idx%(this.points.length);
+    if (el<0) {
+      el = this.points.length + el;
+    }
+
+    return this.points[el];
+  },
+
+  dedupe : function(returnNew) {
+    var seen = {};
+    // TODO: make this a tree
+    var points = this.points.filter(function(a) {
+      var key = a.x + ':' + a.y;
+      if (!seen[key]) {
+        seen[key] = true;
+        return true;
+      }
+    });
+
+    if (returnNew) {
+      return new Polygon(points);
+    } else {
+      this.points = points;
+      return this;
+    }
+  },
+
+  remove : function(vec) {
+    this.points = this.points.filter(function(point) {
+      return point!==vec;
+    });
+    return this;
+  },
+
+  // Remove identical points occurring one after the other
+  clean : function(returnNew) {
+    var last = this.point(-1);
+
+    var points = this.points.filter(function(a) {
+      var ret = false;
+      if (!last.equal(a)) {
+        ret = true;
+      }
+
+      last = a;
+      return ret;
+    });
+
+    if (returnNew) {
+      return new Polygon(points);
+    } else {
+      this.points = points
+      return this;
+    }
+  },
+
+  winding : function() {
+    return this.area() > 0;
+  },
+
+  rewind : function(cw) {
+    cw = !!cw;
+    var winding = this.winding();
+    if (winding !== cw) {
+      this.points.reverse();
+    }
+    return this;
+  },
+
+  area : function() {
+    var area = 0;
+    var first = this.point(0);
+
+    this.each(function(prev, current, next, idx) {
+      if (idx<2) { return; }
+
+      var edge1 = first.subtract(current, true);
+      var edge2 = first.subtract(prev, true);
+      area += ((edge1.x * edge2.y) - (edge1.y * edge2.x));
+    });
+
+    return area/2;
+  },
+
+  closestPointTo : function(vec) {
+    var points = [];
+
+    this.each(function(prev, current, next) {
+      // TODO: optimize
+      var a = prev;
+      var b = current;
+      var ab = b.subtract(a, true);
+      var veca = vec.subtract(a, true);
+      var vecadot = veca.clone().dot(ab);
+      var abdot = ab.clone().dot(ab);
+
+      var t = vecadot/abdot;
+
+      if (t<0) {
+        t = 0;
+      }
+
+      if (t>1) {
+        t = 1;
+      }
+
+      var point = ab.multiply(t, true).add(a);
+
+      points.push({
+        distance: point.distance(vec),
+        point : point
+      });
+    });
+
+    var obj = points.sort(function(a, b) {
+      return a.distance-b.distance;
+    })[0];
+
+    var point = obj.point;
+    point.distanceToCurrent = obj.distance;
+
+    this.each(function(prev, current, next) {
+      if (point.equal(current)) {
+        point.current = current;
+        point.prev = prev;
+        point.next = next;
+        return false;
+      }
+    });
+
+    return point;
+  },
+
+  center : function() {
+    // TODO: the center of a polygon is not the center of it's aabb.
+    var aabb = this.aabb();
+    return Vec2(aabb.x + aabb.w/2, aabb.y + aabb.h/2);
+  },
+
+  scale : function(amount, origin, returnTrue) {
+    var obj = this;
+    if (returnTrue) {
+      obj = this.clone();
+    }
+
+    if (!origin) {
+      origin = obj.center();
+    }
+
+    obj.each(function(p, c) {
+      c.multiply(amount);
+    });
+
+    var originDiff = origin.multiply(amount, true).subtract(origin);
+
+    obj.each(function(p, c) {
+      c.subtract(originDiff);
+    });
+
+    return obj;
+  },
+
+  containsPoint : function(point) {
+    var type=0,
+        left = Vec2(this.aabb().x, point.y + .00001),
+        seen = {};
+
+    this.each(function(prev, current, next) {
+      var i = segseg(left, point, current, next);
+      if (i && i!==true) {
+        type++;
+      }
+    });
+
+    return type%2 === 1;
+  },
+
+  containsPolygon : function(subject) {
+    var ret = true, that = this;
+    subject.each(function(p, c, n) {
+      if (!that.containsPoint(c)) {
+        ret = false;
+        return false;
+      }
+    });
+    return ret;
+  },
+
+
+  aabb : function() {
+    if (this.points.length<2) {
+      return { x: 0, y : 0, w: 0, h: 0};
+    }
+
+    var xmin, xmax, ymax, ymin, point1 = this.point(1);
+
+    xmax = xmin = point1.x;
+    ymax = ymin = point1.y;
+
+    this.each(function(p, c) {
+      if (c.x > xmax) {
+        xmax = c.x;
+      }
+
+      if (c.x < xmin) {
+        xmin = c.x;
+      }
+
+      if (c.y > ymax) {
+        ymax = c.y;
+      }
+
+      if (c.y < ymin) {
+        ymin = c.y;
+      }
+    });
+
+    return {
+      x : xmin,
+      y : ymin,
+      w : xmax - xmin,
+      h : ymax - ymin
+    };
+  },
+
+  offset : function(delta) {
+
+    var raw = [],
+        ret = [],
+        last = null,
+        bisectors = [],
+        rightVec = Vec2(1, 0);
+
+    // Compute bisectors
+    this.each(function(prev, current, next, idx) {
+      var e1 = current.subtract(prev, true).normalize();
+      var e2 = current.subtract(next, true).normalize();
+      var ecross = e1.perpDot(e2);
+      var length = delta / Math.sin(Math.acos(e1.dot(e2))/2);
+
+      length = -length;
+      var angleToZero = rightVec.angleTo(current.subtract(prev, true).normalize());
+
+      var rads = prev.subtract(current, true).normalize().angleTo(
+        next.subtract(current, true).normalize()
+      )
+
+      var bisector = Vec2(length, 0).rotate(angleToZero + rads/2);
+
+      if (ecross < 0)
+      {
+        bisector.add(current);
+      } else {
+        bisector = current.subtract(bisector, true);
+      }
+      bisector.cornerAngle = rads;
+      current.bisector = bisector;
+      bisector.point = current;
+      raw.push(bisector);
+    });
+    
+    Polygon(raw).each(function(p, c, n, i) {
+
+      var isect = segseg(c, c.point, n, n.point);
+
+      if (isect && isect !== true) {
+        // This means that the offset is self-intersecting
+        // find where and use that as the current vec instead
+
+        var isect2 = segseg(
+          p,
+          c,
+          n,
+          this.point(i+2)
+        );
+
+        if (isect2 && isect2 !== false) {
+          isect = isect2;
+        }
+
+        this.remove(c);
+        c.set(isect[0], isect[1]);
+
+      }
+
+      ret.push(c)
+    });
+
+    return Polygon(ret);
+
+  },
+
+  line : function(idx) {
+    return [this.point(idx), this.point(idx+1)];
+  },
+
+  lines : function(fn) {
+    var idx = 0;
+    this.each(function(p, start, end) {
+      fn(start, end, idx++);
+    });
+
+    return this;
+  },
+
+  selfIntersections : function() {
+    var ret = [];
+
+    // TODO: use a faster algorithm. Bentley–Ottmann is a good first choice
+    this.lines(function(s, e, i) {
+      this.lines(function(s2, e2, i2) {
+
+        if (!s2.equal(e) && !s2.equal(s) && !e2.equal(s) && !e2.equal(e) && i+1 < i2) {
+          var isect = segseg(s, e, s2, e2);
+          // self-intersection
+          if (isect && isect !== true) {
+            var vec = Vec2.fromArray(isect);
+            // TODO: wow, this is inneficient but is crucial for creating the
+            //       tree later on.
+            vec.s = i + (s.subtract(vec, true).length() / s.subtract(e, true).length())
+            vec.b = i2 + (s2.subtract(vec, true).length() / s2.subtract(e2, true).length())
+
+            ret.push(vec);
+          }
+        }
+      });
+    }.bind(this));
+    return Polygon(ret);
+  },
+
+  pruneSelfIntersections : function() {
+    var selfIntersections = this.selfIntersections();
+
+    var belongTo = function(s1, b1, s2, b2) {
+      return s1 > s2 && b1 < b2
+    }
+
+    var contain = function(s1, b1, s2, b2) {
+      return s1 < s2 && b1 > b2;
+    }
+
+    var interfere = function(s1, b1, s2, b2) {
+      return (s1 < s2 && s2 < b1 && b2 > b1) || (s2 < b1 && b1 < b2 && s1 < s2); 
+    }
+
+    function Node(value) {
+      this.value = value;
+      this.children = [];
+    }
+
+    // TODO: create tree based on relationship operations
+
+    var rootVec = this.point(0).clone();
+    rootVec.s = 0;
+    rootVec.b = (this.points.length-1) + 0.99;
+    var root = new Node(rootVec);
+    var last = root;
+    var tree = [rootVec];
+    selfIntersections.each(function(p, c, n) {
+      console.log(
+        'belongTo:', belongTo(last.s, last.b, c.s, c.b),
+        'contain:', contain(last.s, last.b, c.s, c.b),
+        'interfere:', interfere(last.s, last.b, c.s, c.b)
+      );
+
+      //if (!contain(1-last.s, 1-last.b, 1-c.s, 1-c.b)) {
+        tree.push(c);
+        last = c;
+      //} else {
+        // collect under children
+      //}
+
+    });
+
+    var ret = [];
+
+    if (tree.length < 2) {
+      return ret;
+    }
+
+    tree.sort(function(a, b) {
+      return a.s - b.s;
+    });
+
+    for (var i=0; i<tree.length; i+=2) {
+      var poly = [];
+      var next = (i<tree.length-1) ? tree[i+1] : null;
+
+     if (next) {
+
+        // collect up to the next isect
+        for (var j = Math.floor(tree[i].s); j<=Math.floor(next.s); j++) {
+          poly.push(this.point(j));
+        }
+
+        poly.push(next);
+        poly.push(this.point(Math.floor(tree[i].b)));
+      } else {
+        poly.push(tree[i])
+        for (var k = Math.floor(tree[i].s+1); k<=Math.floor(tree[i].b); k++) {
+          poly.push(this.point(k));
+        }
+      }
+
+      ret.push(new Polygon(poly));
+    }
+    return ret;
+  },
+
+  get length() {
+    return this.points.length
+  },
+
+  clone : function() {
+    var points = [];
+    this.each(function(p, c) {
+      points.push(c.clone());
+    });
+    return new Polygon(points);
+  },
+
+  rotate: function(rads, origin, returnNew) {
+    origin = origin || this.center();
+
+    var obj = (returnNew) ? this.clone() : this;
+
+    return obj.each(function(p, c) {
+      c.subtract(origin).rotate(rads).add(origin);
+    });
+  },
+
+  translate : function(vec2, returnNew) {
+    var obj = (returnNew) ? this.clone() : this;
+
+    obj.each(function(p, c) {
+      c.add(vec2);
+    });
+
+    return obj;
+  },
+
+  equal : function(poly) {
+    var current = poly.length;
+
+    while(current--) {
+      if (!this.point(current).equal(poly.point(current))) {
+        return false;
+      }
+    }
+    return true;
+  }
+};
+
+if (typeof module !== 'undefined') {
+  module.exports = Polygon;
+}
+},{"segseg":3,"vec2":4}],3:[function(require,module,exports){
 /*  Ported from Mukesh Prasad's public domain code:
  *    http://tog.acm.org/resources/GraphicsGems/gemsii/xlines.c
  *
@@ -837,913 +1346,7 @@ module.exports = function(x1, y1, x2, y2, x3, y3, x4, y4) {
   ];
 };
 
-},{}],3:[function(require,module,exports){
-;(function inject(clean, precision, undef) {
-
-  function Vec2(x, y) {
-    if (!(this instanceof Vec2)) {
-      return new Vec2(x, y);
-    }
-
-    if('object' === typeof x && x) {
-      this.y = x.y || 0;
-      this.x = x.x || 0;
-      return
-    }
-
-    this.x = Vec2.clean(x || 0);
-    this.y = Vec2.clean(y || 0);
-  };
-
-  Vec2.prototype = {
-    change : function(fn) {
-      if (fn) {
-        if (this.observers) {
-          this.observers.push(fn);
-        } else {
-          this.observers = [fn];
-        }
-      } else if (this.observers) {
-        for (var i=this.observers.length-1; i>=0; i--) {
-          this.observers[i](this);
-        }
-      }
-
-      return this;
-    },
-
-    ignore : function(fn) {
-      this.observers = this.observers.filter(function(cb) {
-        return cb !== fn;
-      });
-
-      return this;
-    },
-
-    dirty : function() {
-      this._dirty = true
-      this.__cachedLength = null
-      this.__cachedLengthSquared = null
-    },
-
-    // set x and y
-    set: function(x, y, silent) {
-      if('number' != typeof x) {
-        silent = y;
-        y = x.y;
-        x = x.x;
-      }
-      if(this.x === x && this.y === y)
-        return this;
-
-      this.x = Vec2.clean(x);
-      this.y = Vec2.clean(y);
-
-      this.dirty()
-      if(silent !== false)
-        return this.change();
-    },
-
-    // reset x and y to zero
-    zero : function() {
-      return this.set(0, 0);
-    },
-
-    // return a new vector with the same component values
-    // as this one
-    clone : function() {
-      return new Vec2(this.x, this.y);
-    },
-
-    // negate the values of this vector
-    negate : function(returnNew) {
-      if (returnNew) {
-        return new Vec2(-this.x, -this.y);
-      } else {
-        return this.set(-this.x, -this.y);
-      }
-    },
-
-    // Add the incoming `vec2` vector to this vector
-    add : function(vec2, returnNew) {
-      if (!returnNew) {
-        this.x += vec2.x; this.y += vec2.y;
-        return this.change()
-      } else {
-        // Return a new vector if `returnNew` is truthy
-        return new Vec2(
-          this.x + vec2.x,
-          this.y + vec2.y
-        );
-      }
-    },
-
-    // Subtract the incoming `vec2` from this vector
-    subtract : function(vec2, returnNew) {
-      if (!returnNew) {
-        this.x -= vec2.x; this.y -= vec2.y;
-        return this.change()
-      } else {
-        // Return a new vector if `returnNew` is truthy
-        return new Vec2(
-          this.x - vec2.x,
-          this.y - vec2.y
-        );
-      }
-    },
-
-    // Multiply this vector by the incoming `vec2`
-    multiply : function(vec2, returnNew) {
-      var x,y;
-      if ('number' !== typeof vec2) { //.x !== undef) {
-        x = vec2.x;
-        y = vec2.y;
-
-      // Handle incoming scalars
-      } else {
-        x = y = vec2;
-      }
-
-      if (!returnNew) {
-        return this.set(this.x * x, this.y * y);
-      } else {
-        return new Vec2(
-          this.x * x,
-          this.y * y
-        );
-      }
-    },
-
-    // Rotate this vector. Accepts a `Rotation` or angle in radians.
-    //
-    // Passing a truthy `inverse` will cause the rotation to
-    // be reversed.
-    //
-    // If `returnNew` is truthy, a new
-    // `Vec2` will be created with the values resulting from
-    // the rotation. Otherwise the rotation will be applied
-    // to this vector directly, and this vector will be returned.
-    rotate : function(r, inverse, returnNew) {
-      var
-      x = this.x,
-      y = this.y,
-      cos = Math.cos(r),
-      sin = Math.sin(r),
-      rx, ry;
-
-      inverse = (inverse) ? -1 : 1;
-
-      rx = cos * x - (inverse * sin) * y;
-      ry = (inverse * sin) * x + cos * y;
-
-      if (returnNew) {
-        return new Vec2(rx, ry);
-      } else {
-        return this.set(rx, ry);
-      }
-    },
-
-    // Calculate the length of this vector
-    length : function() {
-      var x = this.x, y = this.y;
-      return Math.sqrt(x * x + y * y);
-    },
-
-    // Get the length squared. For performance, use this instead of `Vec2#length` (if possible).
-    lengthSquared : function() {
-      var x = this.x, y = this.y;
-      return x*x+y*y;
-    },
-
-    // Return the distance betwen this `Vec2` and the incoming vec2 vector
-    // and return a scalar
-    distance : function(vec2) {
-      var x = this.x - vec2.x;
-      var y = this.y - vec2.y;
-      return Math.sqrt(x*x + y*y)
-    },
-
-    // Convert this vector into a unit vector.
-    // Returns the length.
-    normalize : function(returnNew) {
-      var length = this.length();
-
-      // Collect a ratio to shrink the x and y coords
-      var invertedLength = (length < Number.MIN_VALUE) ? 0 : 1/length;
-
-      if (!returnNew) {
-        // Convert the coords to be greater than zero
-        // but smaller than or equal to 1.0
-        return this.set(this.x * invertedLength, this.y * invertedLength);
-      } else {
-        return new Vec2(this.x * invertedLength, this.y * invertedLength)
-      }
-    },
-
-    // Determine if another `Vec2`'s components match this one's
-    // also accepts 2 scalars
-    equal : function(v, w) {
-      if (w === undef) {
-        var t = v;
-        v = t.x;
-        w = t.y;
-      }
-
-      return (Vec2.clean(v) === this.x && Vec2.clean(w) === this.y)
-    },
-
-    // Return a new `Vec2` that contains the absolute value of
-    // each of this vector's parts
-    abs : function(returnNew) {
-      var x = Math.abs(this.x), y = Math.abs(this.y);
-
-      if (returnNew) {
-        return new Vec2(x, y);
-      } else {
-        return this.set(x, y);
-      }
-    },
-
-    // Return a new `Vec2` consisting of the smallest values
-    // from this vector and the incoming
-    //
-    // When returnNew is truthy, a new `Vec2` will be returned
-    // otherwise the minimum values in either this or `v` will
-    // be applied to this vector.
-    min : function(v, returnNew) {
-      var
-      tx = this.x,
-      ty = this.y,
-      vx = v.x,
-      vy = v.y,
-      x = tx < vx ? tx : vx,
-      y = ty < vy ? ty : vy;
-
-      if (returnNew) {
-        return new Vec2(x, y);
-      } else {
-        return this.set(x, y);
-      }
-    },
-
-    // Return a new `Vec2` consisting of the largest values
-    // from this vector and the incoming
-    //
-    // When returnNew is truthy, a new `Vec2` will be returned
-    // otherwise the minimum values in either this or `v` will
-    // be applied to this vector.
-    max : function(v, returnNew) {
-      var
-      tx = this.x,
-      ty = this.y,
-      vx = v.x,
-      vy = v.y,
-      x = tx > vx ? tx : vx,
-      y = ty > vy ? ty : vy;
-
-      if (returnNew) {
-        return new Vec2(x, y);
-      } else {
-        return this.set(x, y);
-      }
-    },
-
-    // Clamp values into a range.
-    // If this vector's values are lower than the `low`'s
-    // values, then raise them.  If they are higher than
-    // `high`'s then lower them.
-    //
-    // Passing returnNew as true will cause a new Vec2 to be
-    // returned.  Otherwise, this vector's values will be clamped
-    clamp : function(low, high, returnNew) {
-      var ret = this.min(high, true).max(low)
-      if (returnNew) {
-        return ret;
-      } else {
-        return this.set(ret.x, ret.y);
-      }
-    },
-
-    // Perform linear interpolation between two vectors
-    // amount is a decimal between 0 and 1
-    lerp : function(vec, amount) {
-      return this.add(vec.subtract(this, true).multiply(amount), true);
-    },
-
-    // Get the skew vector such that dot(skew_vec, other) == cross(vec, other)
-    skew : function() {
-      // Returns a new vector.
-      return new Vec2(-this.y, this.x)
-    },
-
-    // calculate the dot product between
-    // this vector and the incoming
-    dot : function(b) {
-      return Vec2.clean(this.x * b.x + b.y * this.y);
-    },
-
-    // calculate the perpendicular dot product between
-    // this vector and the incoming
-    perpDot : function(b) {
-      return Vec2.clean(this.x * b.y - this.y * b.x)
-    },
-
-    // Determine the angle between two vec2s
-    angleTo : function(vec) {
-      return Math.atan2(this.perpDot(vec), this.dot(vec));
-    },
-
-    // Divide this vector's components by a scalar
-    divide : function(scalar, returnNew) {
-      if (scalar === 0 || isNaN(scalar)) {
-        throw new Error('division by zero')
-      }
-
-      if (returnNew) {
-        return new Vec2(this.x/scalar, this.y/scalar);
-      }
-
-      return this.set(this.x / scalar, this.y / scalar);
-    },
-
-    isPointOnLine : function(start, end) {
-      return (start.y - this.y) * (start.x - end.x) ===
-             (start.y - end.y) * (start.x - this.x);
-    },
-
-    toArray: function() {
-      return [this.x, this.y];
-    },
-
-    fromArray: function(array) {
-      return this.set(array[0], array[1]);
-    },
-    toJSON: function () {
-      return {x: this.x, y: this.y}
-    },
-    toString: function() {
-      return '(' + this.x + ', ' + this.y + ')';
-    }
-  };
-
-  Vec2.fromArray = function(array) {
-    return new Vec2(array[0], array[1]);
-  };
-
-  // Floating point stability
-  Vec2.precision = precision || 8;
-  var p = Math.pow(10, Vec2.precision)
-
-  Vec2.clean = clean || function(val) {
-    if (isNaN(val)) {
-      throw new Error('NaN detected')
-    }
-
-    if (!isFinite(val)) {
-      throw new Error('Infinity detected');
-    }
-
-    if(Math.round(val) === val) {
-      return val;
-    }
-
-    return Math.round(val * p)/p;
-  };
-
-  Vec2.inject = inject;
-
-  if(!clean) {
-    Vec2.fast = inject(function (k) { return k })
-
-    // Expose, but also allow creating a fresh Vec2 subclass.
-    if (typeof module !== 'undefined' && typeof module.exports == 'object') {
-      module.exports = Vec2;
-    } else {
-      window.Vec2 = window.Vec2 || Vec2;
-    }
-  }
-  return Vec2
-})();
-
-
-
 },{}],4:[function(require,module,exports){
-var Vec2 = require('vec2');
-var segseg = require('segseg');
-var PI = Math.PI;
-var TAU = PI*2;
-var toTAU = function(rads) {
-  if (rads<0) {
-    rads += TAU;
-  }
-
-  return rads;
-};
-
-
-function Polygon(points) {
-  if (!(this instanceof Polygon)) {
-    return new Polygon(points);
-  }
-
-  if (!Array.isArray(points)) {
-    points = (points) ? [points] : [];
-  }
-
-  this.points = points.map(function(point) {
-    if (Array.isArray(point)) {
-      return Vec2.fromArray(point);
-    } else if (!(point instanceof Vec2)) {
-      if (typeof point.x !== 'undefined' &&
-          typeof point.y !== 'undefined')
-      {
-        return Vec2(point.x, point.y);
-      }
-    } else {
-      return point;
-    }
-  });
-}
-
-Polygon.prototype = {
-
-  each : function(fn) {
-    for (var i = 0; i<this.points.length; i++) {
-      var prev = i>0 ? this.points[i-1] : this.points[this.points.length-1];
-      var next = i<this.points.length-1 ? this.points[i+1] : this.points[0];
-      if (fn.call(this, prev, this.points[i], next, i) === false) {
-        break;
-      }
-    }
-    return this;
-  },
-
-  point : function(idx) {
-    var el = idx%(this.points.length);
-    if (el<0) {
-      el = this.points.length + el;
-    }
-
-    return this.points[el];
-  },
-
-  dedupe : function(returnNew) {
-    var seen = {};
-    // TODO: make this a tree
-    var points = this.points.filter(function(a) {
-      var key = a.x + ':' + a.y;
-      if (!seen[key]) {
-        seen[key] = true;
-        return true;
-      }
-    });
-
-    if (returnNew) {
-      return new Polygon(points);
-    } else {
-      this.points = points;
-      return this;
-    }
-  },
-
-  remove : function(vec) {
-    this.points = this.points.filter(function(point) {
-      return point!==vec;
-    });
-    return this;
-  },
-
-  // Remove identical points occurring one after the other
-  clean : function(returnNew) {
-    var last = this.points[this.points.length-1];
-
-    var points = this.points.filter(function(a) {
-      var ret = false;
-      if (!last.equal(a)) {
-        ret = true;
-      }
-
-      last = a;
-      return ret;
-    });
-
-    if (returnNew) {
-      return new Polygon(points);
-    } else {
-      this.points = points
-      return this;
-    }
-  },
-
-  winding : function() {
-    return this.area() > 0;
-  },
-
-  rewind : function(cw) {
-    cw = !!cw;
-    var winding = this.winding();
-    if (winding !== cw) {
-      this.points.reverse();
-    }
-    return this;
-  },
-
-  area : function() {
-    var area = 0;
-    var first = this.points[0];
-
-    this.each(function(prev, current, next, idx) {
-      if (idx<2) { return; }
-
-      var edge1 = first.subtract(current, true);
-      var edge2 = first.subtract(prev, true);
-      area += ((edge1.x * edge2.y) - (edge1.y * edge2.x))/2
-    });
-
-    return area;
-  },
-
-  closestPointTo : function(vec) {
-    var points = [];
-
-    this.each(function(prev, current, next) {
-      // TODO: optimize
-      var a = prev;
-      var b = current;
-      var ab = b.subtract(a, true);
-      var veca = vec.subtract(a, true);
-      var vecadot = veca.clone().dot(ab);
-      var abdot = ab.clone().dot(ab);
-
-      var t = vecadot/abdot;
-
-      if (t<0) {
-        t = 0;
-      }
-
-      if (t>1) {
-        t = 1;
-      }
-
-      var point = ab.multiply(t, true).add(a);
-
-      points.push({
-        distance: point.distance(vec),
-        point : point
-      });
-    });
-
-    var obj = points.sort(function(a, b) {
-      return a.distance-b.distance;
-    })[0];
-
-    var point = obj.point;
-    point.distanceToCurrent = obj.distance;
-
-    this.each(function(prev, current, next) {
-      if (point.equal(current)) {
-        point.current = current;
-        point.prev = prev;
-        point.next = next;
-        return false;
-      }
-    });
-
-    return point;
-  },
-
-  center : function() {
-    var aabb = this.aabb();
-    return Vec2(aabb.x + aabb.w/2, aabb.y + aabb.h/2);
-  },
-
-  scale : function(amount, origin, returnTrue) {
-    var obj = this;
-    if (returnTrue) {
-      obj = this.clone();
-    }
-
-    if (!origin) {
-      origin = obj.center();
-    }
-
-    obj.each(function(p, c) {
-      c.multiply(amount);
-    });
-
-    var originDiff = origin.multiply(amount, true).subtract(origin);
-
-    obj.each(function(p, c) {
-      c.subtract(originDiff);
-    });
-
-    return obj;
-  },
-
-  containsPoint : function(point) {
-    var type=0,
-        // Avoid intersections with points as they
-        // cause weird results.
-
-        // TODO: this is prone to errors when the x is < -1e10
-        //       calculating the x off of the AABB would be prefered
-        left = Vec2(0, point.y + .00001),
-        seen = {};
-
-
-    this.each(function(prev, current, next) {
-      var i = segseg(left, point, current, next);
-      if (i && i!==true) {
-        type++;
-      }
-    });
-
-
-    return type%2 === 1;
-  },
-
-  containsPolygon : function(subject) {
-    var ret = true, that = this;
-    subject.each(function(p, c, n) {
-      if (!that.containsPoint(c)) {
-        ret = false;
-        return false;
-      }
-    });
-    return ret;
-  },
-
-
-  aabb : function() {
-    if (this.points.length<2) {
-      return { x: 0, y : 0, w: 0, h: 0};
-    }
-
-    var xmin, xmax, ymax, ymin;
-
-    xmax = xmin = this.points[1].x;
-    ymax = ymin = this.points[1].y;
-
-    this.each(function(p, c) {
-      if (c.x > xmax) {
-        xmax = c.x;
-      }
-
-      if (c.x < xmin) {
-        xmin = c.x;
-      }
-
-      if (c.y > ymax) {
-        ymax = c.y;
-      }
-
-      if (c.y < ymin) {
-        ymin = c.y;
-      }
-    });
-
-    return {
-      x : xmin,
-      y : ymin,
-      w : xmax - xmin,
-      h : ymax - ymin
-    };
-  },
-
-  offset : function(delta) {
-
-    var raw = [],
-        ret = [],
-        last = null,
-        bisectors = [],
-        rightVec = Vec2(1, 0);
-
-    // Compute bisectors
-    this.each(function(prev, current, next, idx) {
-      var e1 = current.subtract(prev, true).normalize();
-      var e2 = current.subtract(next, true).normalize();
-      var ecross = e1.perpDot(e2);
-      var length = delta / Math.sin(Math.acos(e1.dot(e2))/2);
-
-      length = -length;
-      var angleToZero = rightVec.angleTo(current.subtract(prev, true).normalize());
-
-      var rads = prev.subtract(current, true).normalize().angleTo(
-        next.subtract(current, true).normalize()
-      )
-
-      var bisector = Vec2(length, 0).rotate(angleToZero - rads/2);
-
-      if (ecross < 0)
-      {
-        bisector.add(current);
-      } else {
-        bisector = current.subtract(bisector, true);
-      }
-      bisector.cornerAngle = rads;
-      current.bisector = bisector;
-      bisector.point = current;
-      raw.push(bisector);
-    });
-    
-    Polygon(raw).each(function(p, c, n, i) {
-
-      var isect = segseg(c, c.point, n, n.point);
-
-      if (isect && isect !== true) {
-        // This means that the offset is self-intersecting
-        // find where and use that as the current vec instead
-
-        var isect2 = segseg(
-          p,
-          c,
-          n,
-          this.point(i+2)
-        );
-
-        if (isect2 && isect2 !== false) {
-          isect = isect2;
-        }
-
-        this.remove(c);
-        c.set(isect[0], isect[1]);
-
-      }
-
-      ret.push(c)
-    });
-
-    return Polygon(ret);
-
-  },
-
-  line : function(idx) {
-    return [this.point(idx), this.point(idx+1)];
-  },
-
-  lines : function(fn) {
-    var idx = 0;
-    this.each(function(p, start, end) {
-      fn(start, end, idx++);
-    });
-
-    return this;
-  },
-
-  selfIntersections : function() {
-    var ret = [];
-
-    // TODO: use a faster algorithm. Bentley–Ottmann is a good first choice
-    this.lines(function(s, e, i) {
-      this.lines(function(s2, e2, i2) {
-
-        if (!s2.equal(e) && !s2.equal(s) && !e2.equal(s) && !e2.equal(e) && i+1 < i2) {
-          var isect = segseg(s, e, s2, e2);
-          // self-intersection
-          if (isect && isect !== true) {
-            var vec = Vec2.fromArray(isect);
-            // TODO: wow, this is inneficient but is crucial for creating the
-            //       tree later on.
-            vec.s = i + (s.subtract(vec, true).length() / s.subtract(e, true).length())
-            vec.b = i2 + (s2.subtract(vec, true).length() / s2.subtract(e2, true).length())
-
-            ret.push(vec);
-          }
-        }
-      });
-    }.bind(this));
-    return Polygon(ret);
-  },
-
-  pruneSelfIntersections : function() {
-    var selfIntersections = this.selfIntersections();
-
-    var belongTo = function(s1, b1, s2, b2) {
-      return s1 > s2 && b1 < b2
-    }
-
-    var contain = function(s1, b1, s2, b2) {
-      return s1 < s2 && b1 > b2;
-    }
-
-    var interfere = function(s1, b1, s2, b2) {
-      return (s1 < s2 && s2 < b1 && b2 > b1) || (s2 < b1 && b1 < b2 && s1 < s2); 
-    }
-
-    function Node(value) {
-      this.value = value;
-      this.children = [];
-    }
-
-    // TODO: create tree based on relationship operations
-
-    var rootVec = this.points[0].clone();
-    rootVec.s = 0;
-    rootVec.b = (this.points.length-1) + 0.99;
-    var root = new Node(rootVec);
-    var last = root;
-    var tree = [rootVec];
-    selfIntersections.each(function(p, c, n) {
-      console.log(
-        'belongTo:', belongTo(last.s, last.b, c.s, c.b),
-        'contain:', contain(last.s, last.b, c.s, c.b),
-        'interfere:', interfere(last.s, last.b, c.s, c.b)
-      );
-
-      //if (!contain(1-last.s, 1-last.b, 1-c.s, 1-c.b)) {
-        tree.push(c);
-        last = c;
-      //} else {
-        // collect under children
-      //}
-
-    });
-
-    var ret = [];
-
-    if (tree.length < 2) {
-      return ret;
-    }
-
-    tree.sort(function(a, b) {
-      return a.s - b.s;
-    });
-
-    for (var i=0; i<tree.length; i+=2) {
-      var poly = [];
-      var next = (i<tree.length-1) ? tree[i+1] : null;
-
-     if (next) {
-
-        // collect up to the next isect
-        for (var j = Math.floor(tree[i].s); j<=Math.floor(next.s); j++) {
-          poly.push(this.points[j]);
-        }
-
-        poly.push(next);
-        poly.push(this.points[Math.floor(tree[i].b)]);
-      } else {
-        poly.push(tree[i])
-        for (var k = Math.floor(tree[i].s+1); k<=Math.floor(tree[i].b); k++) {
-          poly.push(this.points[k]);
-        }
-      }
-
-      ret.push(new Polygon(poly));
-    }
-    return ret;
-  },
-
-  get length() {
-    return this.points.length
-  },
-
-  clone : function() {
-    var points = [];
-    this.each(function(p, c) {
-      points.push(c.clone());
-    });
-    return new Polygon(points);
-  },
-
-  rotate: function(rads, origin, returnNew) {
-    origin = origin || this.center();
-
-    var obj = (returnNew) ? this.clone() : this;
-
-    return obj.each(function(p, c) {
-      c.subtract(origin).rotate(rads).add(origin);
-    });
-  },
-
-  translate : function(vec2, returnNew) {
-    var obj = (returnNew) ? this.clone() : this;
-
-    obj.each(function(p, c) {
-      c.add(vec2);
-    });
-
-    return obj;
-  },
-
-  equal : function(poly) {
-    var current = poly.length;
-
-    while(current--) {
-      if (!this.point(current).equal(poly.point(current))) {
-        return false;
-      }
-    }
-    return true;
-  }
-};
-
-if (typeof module !== 'undefined') {
-  module.exports = Polygon;
-}
-},{"segseg":2,"vec2":3}],5:[function(require,module,exports){
-module.exports=require(2)
-},{}],6:[function(require,module,exports){
 ;(function inject(clean, precision, undef) {
 
   function Vec2(x, y) {
