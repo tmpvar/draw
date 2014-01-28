@@ -4,17 +4,6 @@ function NavigationMode(modeManager, draw) {
 
 NavigationMode.prototype = Object.create(Mode.prototype);
 
-NavigationMode.prototype.mousemove = function() {
-  
-  return true;
-};
-
-NavigationMode.prototype.mousedown = function() {
-
-  return true;
-};
-
-
 NavigationMode.prototype.keydown = function(event) {
 
   switch (event.keyCode) {
@@ -24,15 +13,16 @@ NavigationMode.prototype.keydown = function(event) {
     break;
 
     case 67: // (c)ircle
-      return this.modeManager.mode('circle');
+      this.modeManager.mode('circle');
+      return true;
     break;
 
     case 27: // escape
       this.modeManager.exit();
+      return true;
     break;
   }
 
-  return true;
 };
 
 

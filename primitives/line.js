@@ -4,6 +4,15 @@ function Line(start, end) {
   this.end = end;
 } 
 
+Line.prototype.finalized = false;
+
+Line.prototype.computeGeometry = function(array) {
+  if (this.finalized) {
+    array.push(this.start);
+    array.push(this.end);
+  }
+};
+
 Line.prototype.render = function(ctx) {
   ctx.beginPath()
     ctx.moveTo(this.start.x, this.start.y);

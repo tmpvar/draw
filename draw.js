@@ -29,6 +29,17 @@ function Draw(canvas, ctx, dirty) {
   this.renderables = [];
 }
 
+Draw.prototype.computeGeometry = function() {
+  var ret = [];
+  this.renderables.forEach(function(renderable) {
+    renderable.computeGeometry(ret);
+  });
+
+  return ret;
+};
+
+
+
 Draw.prototype.fixMouse = function(pos) {
   pos.clone();
   pos.y = -pos.y;

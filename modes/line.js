@@ -5,6 +5,13 @@ function LineMode(modeManager, draw) {
 
 LineMode.prototype = Object.create(Mode.prototype);
 
+LineMode.prototype.deactivate = function() {
+  if (this.line && !this.line.finalized) {
+    this.draw.renderables.pop();
+    this.draw.dirty();
+  }
+}
+
 LineMode.prototype.keydown = function(event) {
 
   switch (event.keyCode) {
@@ -14,6 +21,10 @@ LineMode.prototype.keydown = function(event) {
       this.draw.renderables.pop();
       this.modeManager.exit();
       return true;
+    break;
+
+    case 69:
+      this.modeManager.exit();
     break;
 
     default:
@@ -31,6 +42,9 @@ LineMode.prototype.mousemove = function(event) {
 
 LineMode.prototype.mousedown = function(event) {
   if (event && event.position) {
+    if (this.line) {
+      this.line.finalized = true;
+    }
     // begin the line
     this.line = new Line(
       new Point(event.position),
