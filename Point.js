@@ -17,8 +17,9 @@ function Point(x, y, color) {
 }
 Point.prototype = Object.create(Vec2.prototype);
 
-Point.prototype.width = 3;
+Point.prototype.width = 2;
 Point.prototype.color = null;
+Point.prototype.hovered = false;
 
 Point.prototype.render = function(ctx) {
   ctx.fillStyle = rgba(this.color);
@@ -26,15 +27,15 @@ Point.prototype.render = function(ctx) {
   stroke[3] += .1;
   ctx.strokeStyle = rgba(stroke);
 
-  // if (hovering === this) {
-  //   ctx.beginPath();
-  //     ctx.arc(this.x, this.y, this.width*2.5, TAU, false);
-  //   ctx.closePath();
-  // } else {
+  if (this.hovered) {
+    ctx.beginPath();
+      ctx.arc(this.x, this.y, this.width*2.5, TAU, false);
+    ctx.closePath();
+  } else {
     ctx.beginPath();
      ctx.arc(this.x, this.y, this.width, TAU, false);
     ctx.closePath();
-  //}
+  }
   ctx.stroke();
   ctx.fill();
 }

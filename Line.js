@@ -11,7 +11,7 @@ Line.prototype.render = function(ctx) {
     ctx.moveTo(this.start.x, this.start.y);
     ctx.lineTo(this.end.x, this.end.y);
   ctx.closePath();
-  ctx.strokeStyle = "#f0f";
+  ctx.strokeStyle = "#fff";
   ctx.stroke();
 
   this.start.render(ctx);

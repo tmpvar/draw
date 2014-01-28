@@ -137,6 +137,11 @@ var closestLine = function() {
   var closest = null;
   renderHelpers = null;
   states = {};
+
+  if (hovering) {
+    hovering.hovered = false;
+  }
+
   hovering = null;
   hoveringMeta = null;
   paths.concat([points]).forEach(function(path, idx) {
@@ -147,11 +152,13 @@ var closestLine = function() {
 
       if (mouse.distance(start) < intersectionThreshold) {
         hovering = start;
+        start.hovered = true;
         hoveringMeta = { array: path, index: i };
       }
 
       if (mouse.distance(end) < intersectionThreshold) {
         hovering = end;
+        end.hovered = true;
         hoveringMeta = { array: path, index: i };
       }
 
@@ -517,7 +524,7 @@ function render(time) {
         trackingPoint.add(lastPoint);
       }
 
-      trackingPoint.render(delta);
+      trackingPoint.render(ctx, delta);
       
       renderDegrees(lastPoint || trackingPoint, radsFromZero, rads);
     }
@@ -557,7 +564,7 @@ function render(time) {
         );
       }
 
-      c.render && c.render();
+      c.render && c.render(ctx);
     });
 
     var poly = Polygon(points).rewind(true).dedupe();
@@ -607,9 +614,8 @@ function render(time) {
       });
     }
   });
-  
 
-  ctx.strokeStyle = "#ccc";    
+  ctx.strokeStyle = "#ccc";
   ctx.beginPath();
   points.forEach(function(point) {
     ctx.lineTo(point.x, point.y);
@@ -620,7 +626,7 @@ function render(time) {
   ctx.stroke();
 
   points.forEach(function(point) {
-    point.render(delta);
+    point.render(ctx, delta);
   });
 
   ctx.restore();

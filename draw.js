@@ -50,25 +50,28 @@ function LineMode(modeManager, draw) {
 
 LineMode.prototype.mousemove = function(event) {
   
-  if (this.line) {
-    console.log(event.x, event.y);
-    this.line.end.set(event);
-  }
+  if (this.line && event && event.position) {
 
-  return true;
+    var position = this.draw.fixMouse(event.position);
+    console.log(position.toArray());
+    this.line.end.set(position);
+    return true;
+  }
 };
 
 LineMode.prototype.mousedown = function(event) {
+  if (event && event.position) {
+    var position = this.draw.fixMouse(event.position);
+    // begin the line
+    this.line = new Line(
+      new Point(position.x, position.y),
+      new Point(position.x, position.y)
+    );
 
-  // begin the line
-  this.line = new Line(
-    new Point(event.position.x, event.position.y),
-    new Point(event.position.x, event.position.y)
-  );
+    this.draw.renderables.push(this.line);
 
-  this.draw.renderables.push(this.line);
-
-  return true;
+    return true;
+  }
 };
 
 LineMode.prototype.handle = function(type, event) {
@@ -93,6 +96,12 @@ function Draw() {
   this.mouse = Vec2(0, 0);
 }
 
+
+Draw.prototype.fixMouse = function(pos) {
+
+  return pos.clone();//pos.multiply(this.scale, true);
+};
+
 Draw.prototype.renderables = null;
 Draw.prototype.canvas = null;
 Draw.prototype._dirty = false;
@@ -111,8 +120,9 @@ Draw.prototype.render = function() {
   this.canvas.width = w;
 
   ctx.save();
-
+    
     ctx.translate(this.canvas.width/2, this.canvas.height/2);
+    ctx.scale(this.scale, this.scale);
 
     for (var i = 0; i<this.renderables.length; i++) {
       ctx.save();
