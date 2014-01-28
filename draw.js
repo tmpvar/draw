@@ -1,71 +1,38 @@
 
-function DrawDefaultMode(modeManager, draw) {
-  this.modeManager = modeManager;
-  this.draw = draw;
-}
-
-DrawDefaultMode.prototype.mousemove = function() {
-  
-  return true;
-};
-
-DrawDefaultMode.prototype.mousedown = function() {
-
-  return true;
-};
-
-
-DrawDefaultMode.prototype.keydown = function(event) {
-
-  switch (event.keyCode) {
-    case 76: // (l)ine
-      this.modeManager.mode('line');
-      return true;
-    break;
-
-    case 67: // (c)ircle
-      return this.modeManager.mode('circle');
-    break;
-
-    case 27: // escape
-      if (this.modeManager.mode() !== 'default') {
-        this.modeManager.mode('default');
-        return true;
-      }
-    break;
-  }
-
-  return true;
-};
-
-
-DrawDefaultMode.prototype.handle = function(type, event) {
-  if (typeof this[type] === 'function') {
-    return this[type](event);
-  }
-};
-
-
 var requestFrame = (typeof requestAnimationFrame !== 'undefined') ? requestAnimationFrame : setTimeout;
 
 // TODO: allow running under node
 
-function Draw() {
+function Draw(canvas, ctx, dirty) {
+
+  this.dirty = dirty || this.dirty;
   this.modeManager = new ModeManager(true);
   this.scale = 1;
-  this.modeManager.add('default', new DrawDefaultMode(this.modeManager, this), true);
-  this.modeManager.add('line', new LineMode(this.modeManager, this));
+  this.translation = Vec2(0, 0);
 
-  this.canvas = document.createElement('canvas');
-  this.ctx = this.canvas.getContext('2d');
+  this.modeManager.add('navigation', new NavigationMode(this.modeManager, this), true);
+  this.modeManager.add('line', new LineMode(this.modeManager, this));
+  this.modeManager.add('circle', new LineMode(this.modeManager, this));
+
+  if (!canvas) {
+    this.canvas = document.createElement('canvas');
+  } else {
+    this.canvas = canvas;
+  }
+
+  if (!ctx) {
+    this.ctx = this.canvas.getContext('2d');
+  } else {
+    this.ctx = ctx;
+  }
+
   this.renderables = [];
-  this.mouse = Vec2(0, 0);
 }
 
-
 Draw.prototype.fixMouse = function(pos) {
-
-  return pos.clone();//pos.multiply(this.scale, true);
+  pos.clone();
+  pos.y = -pos.y;
+  return pos;
 };
 
 Draw.prototype.renderables = null;
@@ -74,19 +41,14 @@ Draw.prototype._dirty = false;
 Draw.prototype.dirty = function() {
   if (!this._dirty) {
     this._dirty = true;
-    requestFrame(this.render.bind(this), 0);
+    //requestFrame(this.render.bind(this), 0);
   }
 };
 
 Draw.prototype.render = function() {
   this._dirty = false;
-
-  var w = this.canvas.width, ctx = this.ctx;
-  this.canvas.width = 0;
-  this.canvas.width = w;
-
   ctx.save();
-    
+
     ctx.translate(this.canvas.width/2, this.canvas.height/2);
     ctx.scale(this.scale, this.scale);
 
@@ -97,19 +59,19 @@ Draw.prototype.render = function() {
     }
 
   ctx.restore();
-}
+};
 
 Draw.prototype.canvasDimensions = function(w, h) {
   this.canvas.width = w;
   this.canvas.height = h;
 };
 
-Draw.prototype.keydown = function(event) {
-  switch (event.keyCode) {
-  }
-};
-
 Draw.prototype.handle = function(type, event) {
+
+  if (type.indexOf('mouse') > -1) {
+    event.position = this.fixMouse(new Vec2(event));
+  }
+
   if (this.modeManager.handle(type, event)) {
     this.dirty();
     return true;
@@ -118,7 +80,7 @@ Draw.prototype.handle = function(type, event) {
 
 Draw.prototype.update = function(delta) {
   return this.modeManager.update(delta);
-}
+};
 
 if (typeof module !== 'undefined' && module.exports) {
   module.expoers = Draw;

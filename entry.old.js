@@ -110,12 +110,6 @@ var paths = [
 
 var scale = 1;
 var translation = { x : 0, y: 0 };
-var fixMouse = function(e) {
-  return {
-    x : (e.x - canvas.width/2)/scale + translation.x/scale,
-    y : (e.y - canvas.height/2)/scale + translation.y/scale
-  };
-}
 
 var qel = function(selector) {
   return document.querySelector(selector);
