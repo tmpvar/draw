@@ -1,28 +1,40 @@
 
+var rgba = function(array) {
+  return 'rgba(' + array.join(',') + ')';
+};
+
+var fromRgba = function(string) {
+  return string
+          .replace(/[^\(]+/, '')
+          .replace(')', '')
+          .replace(/ /g, '').split(',');
+}
+
+
 function Point(x, y, color) {
   Vec2.call(this, x, y);
   this.color = [0, 255, 0, .2]
 }
-Point.prototype = new Vec2();
+Point.prototype = Object.create(Vec2.prototype);
 
 Point.prototype.width = 3;
 Point.prototype.color = null;
 
-Point.prototype.render = function(diff) {
+Point.prototype.render = function(ctx) {
   ctx.fillStyle = rgba(this.color);
   var stroke = this.color.slice();
   stroke[3] += .1;
   ctx.strokeStyle = rgba(stroke);
 
-  if (hovering === this) {
-    ctx.beginPath();
-      ctx.arc(this.x, this.y, this.width*2.5, TAU, false);
-    ctx.closePath();
-  } else {
+  // if (hovering === this) {
+  //   ctx.beginPath();
+  //     ctx.arc(this.x, this.y, this.width*2.5, TAU, false);
+  //   ctx.closePath();
+  // } else {
     ctx.beginPath();
      ctx.arc(this.x, this.y, this.width, TAU, false);
     ctx.closePath();
-  }
+  //}
   ctx.stroke();
   ctx.fill();
 }
