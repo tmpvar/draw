@@ -1,13 +1,14 @@
-function DrawMode(modeManager) {
+function Mode(modeManager, draw) {
   this.modeManager = modeManager;
+  this.draw = draw;
 }
 
-DrawMode.prototype.exit = function() {
+Mode.prototype.exit = function() {
   this.modeManager.exit();
 };
 
-DrawMode.prototype.handle = function(type, event) {
+Mode.prototype.handle = function(type, event) {
   if (typeof this[type] === 'function') {
-    return this[type](event);
+    return event && this[type](event);
   }
 };

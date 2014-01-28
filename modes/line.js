@@ -1,11 +1,9 @@
 function LineMode(modeManager, draw) {
-  DrawMode.call(this, modeManager);
-
-  this.draw = draw;
+  Mode.call(this, modeManager, draw);
   this.line = null;
 }
 
-LineMode.prototype = Object.create(DrawMode.prototype);
+LineMode.prototype = Object.create(Mode.prototype);
 
 LineMode.prototype.keydown = function(event) {
 
@@ -14,7 +12,7 @@ LineMode.prototype.keydown = function(event) {
     case 27: // escape
       this.line = null;
       this.draw.renderables.pop();
-      this.modeManager.mode('navigation');
+      this.modeManager.exit();
       return true;
     break;
 
