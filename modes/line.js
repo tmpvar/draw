@@ -23,10 +23,6 @@ LineMode.prototype.keydown = function(event) {
       return true;
     break;
 
-    case 69:
-      this.modeManager.exit();
-    break;
-
     default:
       console.log('unhandled key', event.keyCode);
     break;
