@@ -4,8 +4,6 @@ function Line(start, end) {
   this.end = end;
 } 
 
-
-
 Line.prototype.render = function(ctx) {
   ctx.beginPath()
     ctx.moveTo(this.start.x, this.start.y);
@@ -16,4 +14,4 @@ Line.prototype.render = function(ctx) {
 
   this.start.render(ctx);
   this.end.render(ctx);
-}
+};

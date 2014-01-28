@@ -3,7 +3,9 @@ if (typeof require !== 'undefined') {
   var Vec2 = require('vec2');
   var Polygon = require('polygon');
   var segseg = require('segseg');
-  var Point = require('Point');
+  var Point = require('primitives/point');
+  var Line = require('primitives/line');
+  var Circle = require('primitives/circle');
 }
 /*
 
@@ -114,6 +116,11 @@ var fixMouse = function(e) {
     y : (e.y - canvas.height/2)/scale + translation.y/scale
   };
 }
+
+var qel = function(selector) {
+  return document.querySelector(selector);
+}
+
 
 var lines = function(array, wrap, fn) {
   for (var i=0; i<array.length; i++) {
@@ -233,10 +240,6 @@ var closestLine = function() {
   });
 }
 
-
-var qel = function(selector) {
-  return document.querySelector(selector);
-}
 
 Point.trackingModes = {
   center : function(start, end) {
@@ -529,11 +532,6 @@ function render(time) {
       renderDegrees(lastPoint || trackingPoint, radsFromZero, rads);
     }
   }
-
-  if (dragging) {
-  //  console.log('dragging', dragging);
-  }
-
 
   paths.forEach(function(points) {
     ctx.beginPath();

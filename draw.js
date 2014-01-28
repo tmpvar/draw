@@ -23,6 +23,10 @@ DrawDefaultMode.prototype.keydown = function(event) {
       return true;
     break;
 
+    case 67: // (c)ircle
+      return this.modeManager.mode('circle');
+    break;
+
     case 27: // escape
       if (this.modeManager.mode() !== 'default') {
         this.modeManager.mode('default');
@@ -41,44 +45,6 @@ DrawDefaultMode.prototype.handle = function(type, event) {
   }
 };
 
-
-function LineMode(modeManager, draw) {
-  this.modeManager = modeManager;
-  this.draw = draw;
-  this.line = null;
-}
-
-LineMode.prototype.mousemove = function(event) {
-  
-  if (this.line && event && event.position) {
-
-    var position = this.draw.fixMouse(event.position);
-    console.log(position.toArray());
-    this.line.end.set(position);
-    return true;
-  }
-};
-
-LineMode.prototype.mousedown = function(event) {
-  if (event && event.position) {
-    var position = this.draw.fixMouse(event.position);
-    // begin the line
-    this.line = new Line(
-      new Point(position.x, position.y),
-      new Point(position.x, position.y)
-    );
-
-    this.draw.renderables.push(this.line);
-
-    return true;
-  }
-};
-
-LineMode.prototype.handle = function(type, event) {
-  if (typeof this[type] === 'function') {
-    return this[type](event);
-  }
-};
 
 var requestFrame = (typeof requestAnimationFrame !== 'undefined') ? requestAnimationFrame : setTimeout;
 
