@@ -12,7 +12,7 @@ function Draw(canvas, ctx, dirty) {
 
   this.modeManager.add('navigation', new NavigationMode(this.modeManager, this), true);
   this.modeManager.add('line', new LineMode(this.modeManager, this));
-  this.modeManager.add('circle', new LineMode(this.modeManager, this));
+  this.modeManager.add('circle', new CircleMode(this.modeManager, this));
 
   if (!canvas) {
     this.canvas = document.createElement('canvas');
@@ -41,24 +41,25 @@ Draw.prototype._dirty = false;
 Draw.prototype.dirty = function() {
   if (!this._dirty) {
     this._dirty = true;
-    //requestFrame(this.render.bind(this), 0);
+    requestFrame(this.render.bind(this), 0);
   }
 };
 
 Draw.prototype.render = function() {
-  this._dirty = false;
-  ctx.save();
 
-    ctx.translate(this.canvas.width/2, this.canvas.height/2);
-    ctx.scale(this.scale, this.scale);
+  this._dirty = false;
+  this.ctx.save();
+
+    this.ctx.translate(this.canvas.width/2, this.canvas.height/2);
+    this.ctx.scale(this.scale, this.scale);
 
     for (var i = 0; i<this.renderables.length; i++) {
-      ctx.save();
-        this.renderables[i].render(ctx);
-      ctx.restore();
+      this.ctx.save();
+        this.renderables[i].render(this.ctx);
+      this.ctx.restore();
     }
 
-  ctx.restore();
+  this.ctx.restore();
 };
 
 Draw.prototype.canvasDimensions = function(w, h) {
