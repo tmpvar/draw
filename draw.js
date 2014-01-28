@@ -45,21 +45,28 @@ Draw.prototype.dirty = function() {
   }
 };
 
+Draw.prototype.clearCanvas = function() {
+  var w = this.canvas.width;
+  this.canvas.width = 0;
+  this.canvas.width = w;
+};
+
 Draw.prototype.render = function() {
 
   this._dirty = false;
-  this.ctx.save();
+  var ctx = this.ctx;
+  ctx.save();
 
-    this.ctx.translate(this.canvas.width/2, this.canvas.height/2);
-    this.ctx.scale(this.scale, this.scale);
+    ctx.translate(this.canvas.width/2, this.canvas.height/2);
+    ctx.scale(this.scale, this.scale);
 
     for (var i = 0; i<this.renderables.length; i++) {
-      this.ctx.save();
-        this.renderables[i].render(this.ctx);
-      this.ctx.restore();
+      ctx.save();
+        this.renderables[i].render(ctx);
+      ctx.restore();
     }
 
-  this.ctx.restore();
+  ctx.restore();
 };
 
 Draw.prototype.canvasDimensions = function(w, h) {
@@ -69,7 +76,7 @@ Draw.prototype.canvasDimensions = function(w, h) {
 
 Draw.prototype.handle = function(type, event) {
 
-  if (type.indexOf('mouse') > -1) {
+  if (type.indexOf('mouse') > -1 && !event.position) {
     event.position = this.fixMouse(new Vec2(event));
   }
 
