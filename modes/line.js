@@ -1,8 +1,11 @@
 function LineMode(modeManager, draw) {
-  this.modeManager = modeManager;
+  DrawMode.call(this, modeManager);
+
   this.draw = draw;
   this.line = null;
 }
+
+LineMode.prototype = Object.create(DrawMode.prototype);
 
 LineMode.prototype.keydown = function(event) {
 
@@ -15,14 +18,11 @@ LineMode.prototype.keydown = function(event) {
       return true;
     break;
 
-
     default:
       console.log('unhandled key', event.keyCode);
     break;
   }
-
-}
-
+};
 
 LineMode.prototype.mousemove = function(event) {
   if (this.line && event && event.position) {
@@ -42,11 +42,5 @@ LineMode.prototype.mousedown = function(event) {
     this.draw.renderables.push(this.line);
 
     return true;
-  }
-};
-
-LineMode.prototype.handle = function(type, event) {
-  if (typeof this[type] === 'function') {
-    return this[type](event);
   }
 };

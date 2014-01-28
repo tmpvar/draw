@@ -1,7 +1,10 @@
 function NavigationMode(modeManager, draw) {
-  this.modeManager = modeManager;
+  DrawMode.call(this, modeManager);
+
   this.draw = draw;
 }
+
+NavigationMode.prototype = Object.create(DrawMode.prototype);
 
 NavigationMode.prototype.mousemove = function() {
   
@@ -37,9 +40,4 @@ NavigationMode.prototype.keydown = function(event) {
   return true;
 };
 
-NavigationMode.prototype.handle = function(type, event) {
-  if (typeof this[type] === 'function') {
-    return this[type](event);
-  }
-};
 
