@@ -2,8 +2,9 @@ function Line(start, end) {
 
   this.start = start;
   this.end = end;
-} 
+}
 
+Line.prototype.isLine = true;
 Line.prototype.finalized = false;
 
 Line.prototype.computeGeometry = function(array) {
@@ -11,6 +12,7 @@ Line.prototype.computeGeometry = function(array) {
     array.push(this.start);
     array.push(this.end);
   }
+  return array;
 };
 
 Line.prototype.render = function(ctx) {

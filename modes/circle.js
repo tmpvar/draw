@@ -21,7 +21,7 @@ CircleMode.prototype.mousemove = function(event) {
   if (event.position) {
 
     if (this.circle) {
-      this.circle.radius = this.circle.origin.distance(event.position);
+      this.circle.radius(this.circle.position.distance(event.position));
       this.circle.helper.set(event.position);
     }
     return true;
@@ -34,11 +34,11 @@ CircleMode.prototype.mousedown = function(event) {
   if (event.position) {
 
     if (this.circle) {
-      this.circle.radius = this.circle.origin.distance(event.position);
+      this.circle.radius(this.circle.position.distance(event.position));
       this.circle.helper = null;
       this.circle = null;
     } else {
-      this.circle = new Circle(event.position);
+      this.circle = new Circle(new Point(event.position));
       this.circle.helper = new Point(event.position);
       this.draw.renderables.push(this.circle);
     }

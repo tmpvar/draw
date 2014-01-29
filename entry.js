@@ -1,8 +1,8 @@
-var ctx = fc(function() {
+var ctx = fc(function(delta) {
   ctx.clear();
 
   ctx.save();
-    draw.render(ctx);
+    draw.render(ctx, delta);
   ctx.restore();
 }, false);
 

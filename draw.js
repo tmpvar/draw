@@ -62,14 +62,16 @@ Draw.prototype.clearCanvas = function() {
   this.canvas.width = w;
 };
 
-Draw.prototype.render = function() {
-
+Draw.prototype.render = function(delta) {
   this._dirty = false;
   var ctx = this.ctx;
+
   ctx.save();
 
     ctx.translate(this.canvas.width/2, this.canvas.height/2);
     ctx.scale(this.scale, this.scale);
+
+    this.update(delta);
 
     for (var i = 0; i<this.renderables.length; i++) {
       ctx.save();
@@ -98,7 +100,7 @@ Draw.prototype.handle = function(type, event) {
 };
 
 Draw.prototype.update = function(delta) {
-  return this.modeManager.update(delta);
+  return this.modeManager.update(this.ctx, delta);
 };
 
 if (typeof module !== 'undefined' && module.exports) {
