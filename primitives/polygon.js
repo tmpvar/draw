@@ -16,9 +16,12 @@ Polygon.prototype.render = function(ctx, delta) {
   });
 };
 
-
-
 Polygon.prototype.computeGeometry = function(array) {
-  Array.prototype.push.apply(array, this.points);
+  for (var i = 0; i<this.points.length; i++) {
+    var iy = this.points[i].clone();
+    iy.y = -iy.y
+    array.push(iy);
+  }
+
   return array;
 };
