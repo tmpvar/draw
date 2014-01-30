@@ -24,16 +24,19 @@ Circle.prototype.render = function(ctx) {
 
 var TAU = Math.PI*2;
 Circle.prototype.computeGeometry = function(array) {
-  var segments = 4;
+  var segments = 32;
+
+  var radius = this.radius();
+
+  var transform = new Vec2(this.position.x, -this.position.y);
 
   for (var i = 0; i <= segments; i++) {
 
     var segment = i / segments * TAU;
-    var radius = this.radius();
     array.push(Vec2(
-      radius * Math.cos( segment ),
-      radius * Math.sin( segment )
-    ));
+      Math.cos(segment),
+      Math.sin(segment)
+    ).multiply(radius).add(transform));
   }
 
   return array;
