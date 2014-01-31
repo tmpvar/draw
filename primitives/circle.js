@@ -23,8 +23,8 @@ Circle.prototype.render = function(ctx) {
 };
 
 var TAU = Math.PI*2;
-Circle.prototype.computeGeometry = function(array) {
-  var segments = 32;
+Circle.prototype.computeGeometry = function(array, hole) {
+  var segments = 64;
 
   var radius = this.radius();
 
@@ -38,6 +38,11 @@ Circle.prototype.computeGeometry = function(array) {
       Math.sin(segment)
     ).multiply(radius).add(transform));
   }
+
+  if (!hole) {
+    array.reverse();
+  }
+
 
   return array;
 };

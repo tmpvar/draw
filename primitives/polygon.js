@@ -16,7 +16,10 @@ Polygon.prototype.render = function(ctx, delta) {
   });
 };
 
-Polygon.prototype.computeGeometry = function(array) {
+Polygon.prototype.computeGeometry = function(array, hole) {
+
+  this.rewind(hole);
+
   for (var i = 0; i<this.points.length; i++) {
     var iy = this.points[i].clone();
     iy.y = -iy.y
