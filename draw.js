@@ -94,6 +94,7 @@ Draw.prototype.handle = function(type, event) {
   }
 
   if (this.modeManager.handle(type, event)) {
+
     this.dirty();
     return true;
   }
@@ -104,7 +105,7 @@ Draw.prototype.update = function(delta) {
 };
 
 if (typeof module !== 'undefined' && module.exports) {
-  module.expoers = Draw;
+  module.exports = Draw;
 }
 
 if (typeof window !== 'undefined') {
