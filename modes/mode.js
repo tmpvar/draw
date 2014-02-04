@@ -9,6 +9,7 @@ Mode.prototype.exit = function() {
 
 Mode.prototype.handle = function(type, event) {
   if (typeof this[type] === 'function') {
-    return event && this[type](event);
+    var r = this[type](event);
+    return r;
   }
 };

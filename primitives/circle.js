@@ -24,7 +24,7 @@ Circle.prototype.render = function(ctx) {
 
 var TAU = Math.PI*2;
 Circle.prototype.computeGeometry = function(array, hole) {
-  var segments = 64;
+  var segments = 32;
 
   var radius = this.radius();
 

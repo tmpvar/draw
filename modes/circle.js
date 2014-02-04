@@ -7,11 +7,18 @@ CircleMode.prototype = Object.create(Mode.prototype);
 CircleMode.prototype.circle = null;
 
 CircleMode.prototype.keydown = function(event) {
-  switch (event) {
+  switch (event.keyCode) {
     case 27: // escape
       if (this.circle) {
+        this.circle = null;
         this.circle.helper = null;
+      } else {
+
+        // second escape will take us back to navigation mode
+        this.exit();
       }
+
+      return true;
     break;
   }
 }

@@ -72,6 +72,7 @@ Draw.prototype.render = function(delta) {
     ctx.scale(this.scale, this.scale);
 
     this.update(delta);
+    ctx.lineWidth = (1/this.scale)*2.5;
 
     for (var i = 0; i<this.renderables.length; i++) {
       ctx.save();
@@ -83,6 +84,7 @@ Draw.prototype.render = function(delta) {
 };
 
 Draw.prototype.canvasDimensions = function(w, h) {
+  window.drawCanvas = this.canvas;
   this.canvas.width = w;
   this.canvas.height = h;
 };

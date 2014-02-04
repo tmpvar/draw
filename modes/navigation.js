@@ -5,7 +5,6 @@ function NavigationMode(modeManager, draw) {
 NavigationMode.prototype = Object.create(Mode.prototype);
 
 NavigationMode.prototype.keydown = function(event) {
-
   switch (event.keyCode) {
     case 76: // (l)ine
       this.modeManager.mode('line');
@@ -16,13 +15,7 @@ NavigationMode.prototype.keydown = function(event) {
       this.modeManager.mode('circle');
       return true;
     break;
-
-    case 27: // escape
-      this.modeManager.exit();
-      return true;
-    break;
   }
-
 };
 
 
