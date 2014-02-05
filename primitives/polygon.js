@@ -39,15 +39,14 @@ Polygon.prototype.computeGeometry = function(array, hole) {
 
 Polygon.prototype.hit = function(vec, threshold) {
   var contains =  false;
-  var line = new Line();
   var p = this.points, l = p.length;
 
   this.hoveredLines = {};
   var ret = [];
   for (var i=0; i<l; i++) {
-    line.start = p[i];
-    line.end = this.point(i+1);
+    var line = new Line(p[i], this.point(i+1))
     var hoveredLine = line.hit(vec, threshold).filter(Boolean);
+
     if (hoveredLine.length) {
       this.hoveredLines[i] = true;
       Array.prototype.push.apply(ret, hoveredLine);
