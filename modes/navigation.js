@@ -21,17 +21,20 @@ NavigationMode.prototype.keydown = function(event) {
 
 NavigationMode.prototype.mousemove = function(event) {
 
-  var v = Vec2(event).divide(this.draw.scale, true).add(this.draw.translation).subtract(Vec2(this.draw.canvas.width/2, this.draw.canvas.height/2));
-  var r = this.draw.renderables, l = r.length, dirty = false;
+  var v = Vec2(event)
+          .divide(this.draw.scale, true)
+          .add(this.draw.translation)
+          .subtract(
+            Vec2(this.draw.canvas.width/2, this.draw.canvas.height/2)
+          );
+
+  var r = this.draw.renderables, l = r.length;
 
   for (var i = 0; i<l; i++) {
-    dirty = dirty || r[i].hit(v, this.draw.hitThreshold);
+    r[i].hit(v, this.draw.hitThreshold);
   }
 
-  if (dirty) {
-    this.draw.dirty();
-  }
+  // TODO: don't go dirty every time
+  this.draw.dirty();
 
 };
-
-
