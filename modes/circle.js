@@ -10,8 +10,8 @@ CircleMode.prototype.keydown = function(event) {
   switch (event.keyCode) {
     case 27: // escape
       if (this.circle) {
-        this.circle = null;
         this.circle.helper = null;
+        this.circle = null;
       } else {
 
         // second escape will take us back to navigation mode
@@ -42,14 +42,21 @@ CircleMode.prototype.mousedown = function(event) {
 
     if (this.circle) {
       this.circle.radius(this.circle.position.distance(event.position));
+      this.draw.renderables.push(this.circle);
       this.circle.helper = null;
       this.circle = null;
     } else {
       this.circle = new Circle(new Point(event.position));
       this.circle.helper = new Point(event.position);
-      this.draw.renderables.push(this.circle);
     }
 
     return true;
   }
+};
+
+CircleMode.prototype.update = function(ctx, deltaTime) {
+  if (this.circle) {
+    this.circle.render(ctx, deltaTime);
+  }
+
 };
