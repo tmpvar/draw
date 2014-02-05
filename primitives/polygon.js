@@ -16,11 +16,8 @@ Polygon.prototype.render = function(ctx, delta) {
   ctx.closePath();
 
   if (this.hovered) {
-    console.log('filling')
     ctx.fillStyle = "rgba(0, 255, 0, .05)";
     ctx.fill();
-  } else {
-    console.log('skip')
   }
 };
 
