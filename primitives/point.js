@@ -46,10 +46,16 @@ Point.prototype.autoCenter = function(start, end) {
   var handler = function() {
     var n = end.subtract(start, true).divide(2).add(start);
     this.set(n.x, n.y);
-  }.bind(this);    
+  }.bind(this);
 
   start.change(handler);
   end.change(handler);
+};
+
+Point.prototype.hit = function(vec, threshold) {
+  var hit = this.distance(vec) < threshold;
+  this.hovered = hit;
+  return hit;
 };
 
 
