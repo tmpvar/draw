@@ -1,5 +1,5 @@
 var ctx = fc(function(delta) {
-  ctx.clear();
+  ctx.clear('#111122');
 
   ctx.save();
     draw.render(ctx, delta);
@@ -7,6 +7,8 @@ var ctx = fc(function(delta) {
 }, false);
 
 var draw = new Draw(ctx.canvas, ctx, ctx.dirty);
+
+window.addEventListener('resize', ctx.dirty);
 
 draw.fixMouse = function(e) {
   return Vec2(
