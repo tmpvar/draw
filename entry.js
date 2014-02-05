@@ -11,7 +11,7 @@ var draw = new Draw(ctx.canvas, ctx, ctx.dirty);
 window.addEventListener('resize', ctx.dirty);
 
 draw.fixMouse = function(e) {
-  return Vec2(
+  return new Point(
     (e.x - ctx.canvas.width/2)/draw.scale + draw.translation.x/draw.scale,
     (e.y - ctx.canvas.height/2)/draw.scale + draw.translation.y/draw.scale
   );

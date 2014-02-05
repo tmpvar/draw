@@ -18,7 +18,15 @@ LineMode.prototype.keydown = function(event) {
 
     case 27: // escape
       this.line = null;
-      Array.prototype.push.apply(this.draw.renderables, this.current);
+
+      if (this.current.length && !this.current[this.current.length-1].finalized) {
+        this.current.pop();
+      }
+
+      if (this.current.length) {
+        Array.prototype.push.apply(this.draw.renderables, this.current);
+      }
+
       this.current = [];
       this.modeManager.exit();
       return true;
@@ -26,15 +34,21 @@ LineMode.prototype.keydown = function(event) {
 
     case 67: // [c]lose
       // TODO: add undo
-      var points = [];
-      this.current.forEach(function(line) {
-        line.computeGeometry(points);
-      });
+      if (!this.current[this.current.length-1].finalized) {
+        this.current.pop();
+      }
 
-      this.current = [];
+      if (this.current.length) {
+        var points = [];
+        this.current.forEach(function(line) {
+          line.computeGeometry(points);
+        });
 
-      var poly = new Polygon(points).clean();
-      this.draw.renderables.push(poly);
+        this.current = [];
+
+        var poly = new Polygon(points, Point).clean();
+        this.draw.renderables.push(poly);
+      }
       return true;
     break;
 
@@ -56,12 +70,16 @@ LineMode.prototype.mousedown = function(event) {
   // TODO: track closing of a poly by clicking on the end point
 
   if (event && event.position) {
+    var first = null;
     if (this.line) {
       this.line.finalized = true;
+      first = this.line.end;
+    } else {
+      first = new Point(event.position);
     }
     // begin the line
     this.line = new Line(
-      new Point(event.position),
+      first,
       new Point(event.position)
     );
 

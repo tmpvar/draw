@@ -13,6 +13,7 @@ function Draw(canvas, ctx, dirty) {
   this.modeManager.add('navigation', new NavigationMode(this.modeManager, this), true);
   this.modeManager.add('line', new LineMode(this.modeManager, this));
   this.modeManager.add('circle', new CircleMode(this.modeManager, this));
+  this.modeManager.add('move', new MoveMode(this.modeManager, this));
 
   if (!canvas) {
     this.canvas = document.createElement('canvas');
@@ -41,7 +42,6 @@ Draw.prototype.computeGeometry = function() {
 };
 
 Draw.prototype.fixMouse = function(pos) {
-  pos.clone();
   pos.y = -pos.y;
   return pos;
 };
@@ -92,7 +92,7 @@ Draw.prototype.canvasDimensions = function(w, h) {
 Draw.prototype.handle = function(type, event) {
 
   if (type.indexOf('mouse') > -1 && !event.position) {
-    event.position = this.fixMouse(new Vec2(event));
+    event.position = this.fixMouse(event);
   }
 
   if (this.modeManager.handle(type, event)) {

@@ -21,6 +21,7 @@ Point.prototype.width = 2;
 Point.prototype.color = null;
 Point.prototype.hovered = false;
 
+
 Point.prototype.render = function(ctx) {
   ctx.fillStyle = rgba(this.color);
   var stroke = this.color.slice();
@@ -53,54 +54,17 @@ Point.prototype.autoCenter = function(start, end) {
 };
 
 Point.prototype.hit = function(vec, threshold) {
-  var hit = this.distance(vec) < threshold;
+  var dist = this.distance(vec);
+  var hit = dist < threshold;
   this.hovered = hit;
-  return hit;
+
+  if (hit) {
+    return new Hit(this, dist);
+  }
+
+  return false;
 };
 
-
-Point.relationshipModes = {
-  center : function(start, end) {
-    var change = function() {
-      var diff = end.subtract(start, true).add(end);
-      this.set(diff.x, diff.y);
-    }
-
-    this.trackingMode = { name : "center", start: start, end: end };
-
-    start.change(change.bind(this));
-    end.change(change.bind(this));
-  },
-
-  along : function(point, start, end) {
-
-    this.trackingMode = {
-      name : "percent",
-      start: start,
-      end: end
-    };
-
-  },
-
-  on : function(start, end) {
-    // TODO: coincident means either exacl
-    this.trackingMode = {
-      name : "on",
-      start: start,
-      end: end
-    };
-
-    point.change(function() {
-      if (!end) {
-        this.set(point.x, point.y);
-      } else {
-        var diff = end.subtract(start, true);
-        var length = diff.length();
-        diff.normalize();
-
-        diff.multiply(length*percent).add(start);
-        this.set(diff.x, diff.y);
-      }
-    }.bind(this));
-  }
-}
+Point.prototype.move = function(vec) {
+  this.add(vec);
+};

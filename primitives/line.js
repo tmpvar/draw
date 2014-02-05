@@ -33,11 +33,24 @@ Line.prototype.render = function(ctx) {
 };
 
 Line.prototype.hit = function(vec, threshold) {
-  var hit = this.closestPointTo(vec).distance(vec) < threshold/2;
+  var ret = [];
+  var hit = this.closestPointTo(vec);
+  var distanceToHit = hit.distance(vec);
+  var lineHit = distanceToHit < threshold/4;
 
-  this.start.hit(vec, threshold);
-  this.end.hit(vec, threshold);
+  if (lineHit) {
+    ret.push(new Hit(this, distanceToHit));
+  }
 
-  this.hovered = hit;
-  return hit;
+  ret.push(this.start.hit(vec, threshold));
+  ret.push(this.end.hit(vec, threshold));
+
+  this.hovered = lineHit;
+
+  return ret;
+};
+
+Line.prototype.move = function(vec) {
+  this.start.add(vec);
+  this.end.add(vec);
 };

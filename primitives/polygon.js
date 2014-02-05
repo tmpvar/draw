@@ -29,7 +29,7 @@ Polygon.prototype.computeGeometry = function(array, hole) {
   this.rewind(hole);
 
   for (var i = 0; i<this.points.length; i++) {
-    var iy = this.points[i].clone();
+    var iy = new Point(this.points[i].x, this.points[i].y);
     iy.y = -iy.y
     array.push(iy);
   }
@@ -43,15 +43,14 @@ Polygon.prototype.hit = function(vec, threshold) {
   var p = this.points, l = p.length;
 
   this.hoveredLines = {};
-
+  var ret = [];
   for (var i=0; i<l; i++) {
-    contains = p[i].hit(vec, threshold);
-
     line.start = p[i];
     line.end = this.point(i+1);
-    var hoveredLine = line.hit(vec, threshold);
-    if (hoveredLine) {
+    var hoveredLine = line.hit(vec, threshold).filter(Boolean);
+    if (hoveredLine.length) {
       this.hoveredLines[i] = true;
+      Array.prototype.push.apply(ret, hoveredLine);
     }
     contains = contains || hoveredLine;
   }
@@ -60,5 +59,5 @@ Polygon.prototype.hit = function(vec, threshold) {
   contains = contains || this.containsPoint(vec);
   this.hovered = contains;
 
-  return contains;
+  return ret;
 };
