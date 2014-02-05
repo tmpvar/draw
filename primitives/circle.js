@@ -79,6 +79,11 @@ Circle.prototype.hit = function(vec, threshold) {
     this.hovered = false;
     this.circumferenceHovered = true;
 
+    var sentinal = vec.clone();
+    sentinal.move = function(relative, abs) {
+      this.radius(this.position.distance(abs));
+    }.bind(this);
+    ret.push(new Hit(sentinal, d2));
   } else {
     if (this.position.hovered || this.hovered || this.circumferenceHovered) {
       this.position.hovered = false;

@@ -29,11 +29,11 @@ MoveMode.prototype.keydown = function(event) {
 MoveMode.prototype.mousemove = function(event) {
 
   var newMouse = event.position;
-  var diff = newMouse.subtract(this.mouse.add(this.diff, true));
+  var diff = newMouse.subtract(this.mouse.add(this.diff, true), true);
 
   this.diff.add(diff)
 
-  this.target.move(diff);
+  this.target.move(diff, newMouse);
 };
 
 
