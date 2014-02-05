@@ -41,7 +41,7 @@ Line.prototype.hit = function(vec, threshold) {
   var lineHit = distanceToHit < threshold/4;
 
   if (lineHit) {
-    ret.push(new Hit(this, distanceToHit));
+    ret.push(new Hit(this, hit, distanceToHit));
   }
 
   ret.push(this.start.hit(vec, threshold));

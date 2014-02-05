@@ -63,7 +63,7 @@ Circle.prototype.hit = function(vec, threshold) {
   var halfThreshold = threshold / 2;
 
   if (d2 < r - halfThreshold) {
-    ret.push(new Hit(this, d2));
+    ret.push(new Hit(this, this.position, d2));
     if (d2 < threshold) {
       this.position.hovered = true;
       this.hovered = false;
@@ -83,7 +83,7 @@ Circle.prototype.hit = function(vec, threshold) {
     sentinal.move = function(relative, abs) {
       this.radius(this.position.distance(abs));
     }.bind(this);
-    ret.push(new Hit(sentinal, d2));
+    ret.push(new Hit(sentinal, vec, d2));
   } else {
     if (this.position.hovered || this.hovered || this.circumferenceHovered) {
       this.position.hovered = false;

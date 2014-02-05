@@ -59,7 +59,7 @@ Point.prototype.hit = function(vec, threshold) {
   this.hovered = hit;
 
   if (hit) {
-    return new Hit(this, dist);
+    return new Hit(this, this, dist);
   }
 
   return false;

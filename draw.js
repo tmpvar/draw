@@ -15,6 +15,8 @@ function Draw(canvas, ctx, dirty) {
   this.modeManager.add('circle', new CircleMode(this.modeManager, this));
   this.modeManager.add('move', new MoveMode(this.modeManager, this));
 
+  this.modeManager.add('dimension', new DimensionMode(this.modeManager, this));
+
   if (!canvas) {
     this.canvas = document.createElement('canvas');
   } else {

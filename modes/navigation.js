@@ -15,6 +15,11 @@ NavigationMode.prototype.keydown = function(event) {
       this.modeManager.mode('circle');
       return true;
     break;
+
+    case 68: // (d)imension
+      this.modeManager.mode('dimension');
+      return true;
+    break;
   }
 };
 
@@ -29,8 +34,12 @@ NavigationMode.prototype.mouseup = function(event) {
 };
 
 NavigationMode.prototype.mousedown = function(event) {
-  var hits = this.collectHits(event).filter(function(hit) {
-    return hit.thing && hit.thing.move;
+  var hits = collectHits(
+    this.draw.renderables,
+    this.fixMouse(event),
+    this.draw.hitThreshold
+  ).filter(function(hit) {
+      return hit.thing && hit.thing.move;
   });
 
   if (hits.length) {
@@ -53,30 +62,17 @@ NavigationMode.prototype.fixMouse = function(event) {
           );
 }
 
-NavigationMode.prototype.collectHits = function(event) {
-  var v = this.fixMouse(event);
-  var r = this.draw.renderables, l = r.length;
-  var hits = [];
-
-  for (var i = 0; i<l; i++) {
-    r[i].hit(v, this.draw.hitThreshold)
-        .filter(Boolean)
-        .map(function(hit) {
-          hits.push(hit)
-        });
-  }
-
-  return hits.sort(function(a, b) {
-    return (a.distance < b.distance) ? -1 : 1;
-  });
-};
-
 NavigationMode.prototype.mousemove = function(event) {
   if (this.moveTarget && this.modeManager.mode() !== 'move') {
     this.modeManager.mode('move', this.moveTarget);
   }
 
-  this.collectHits(event);
+  // Visual aid
+  collectHits(
+    this.draw.renderables,
+    this.fixMouse(event),
+    this.draw.hitThreshold
+  );
 
   // TODO: don't go dirty every time
   this.draw.dirty();
