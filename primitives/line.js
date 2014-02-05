@@ -34,7 +34,9 @@ Line.prototype.render = function(ctx) {
 
 Line.prototype.hit = function(vec, threshold) {
   var ret = [];
-  var hit = this.closestPointTo(vec);
+  var n = this.start.subtract(this.end, true).normalize().multiply(threshold/2);
+  var hitLine = new Line(this.start.subtract(n, true), this.end.add(n, true));
+  var hit = hitLine.closestPointTo(vec);
   var distanceToHit = hit.distance(vec);
   var lineHit = distanceToHit < threshold/4;
 
