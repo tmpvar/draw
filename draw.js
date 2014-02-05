@@ -29,6 +29,8 @@ function Draw(canvas, ctx, dirty) {
   this.renderables = [];
 }
 
+Draw.prototype.hitThreshold = 20;
+
 Draw.prototype.computeGeometry = function() {
   var ret = [];
   this.renderables.forEach(function(renderable) {
@@ -37,8 +39,6 @@ Draw.prototype.computeGeometry = function() {
 
   return ret;
 };
-
-
 
 Draw.prototype.fixMouse = function(pos) {
   pos.clone();

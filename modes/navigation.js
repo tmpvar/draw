@@ -25,7 +25,7 @@ NavigationMode.prototype.mousemove = function(event) {
   var r = this.draw.renderables, l = r.length, dirty = false;
 
   for (var i = 0; i<l; i++) {
-    dirty = dirty || r[i].hit(v);
+    dirty = dirty || r[i].hit(v, this.draw.hitThreshold);
   }
 
   if (dirty) {
