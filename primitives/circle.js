@@ -17,6 +17,12 @@ Circle.prototype.render = function(ctx) {
     ctx.beginPath();
       ctx.arc(0, 0, this.radius(), Math.PI*2, false);
     ctx.closePath();
+
+    if (this.hovered) {
+      ctx.fillStyle = "rgba(0, 255, 0, .05)";
+      ctx.fill();
+    }
+
     ctx.strokeStyle = this.color;
     ctx.stroke();
   ctx.restore();
@@ -43,6 +49,30 @@ Circle.prototype.computeGeometry = function(array, hole) {
     array.reverse();
   }
 
-
   return array;
+};
+
+Circle.prototype.hit = function(vec) {
+  var d2 = this.position.distance(vec);
+  var r = this.radius();
+
+  // TODO: outer ring highlight
+
+  if (d2 < r) {
+
+    if (this.position.subtract(vec, true).lengthSquared() < 50) {
+      this.position.hovered = true;
+    } else {
+      this.hovered = true;
+      this.position.hovered = false;
+    }
+
+    return true;
+  } else {
+    if (this.position.hovered || this.hovered) {
+      this.position.hovered = false;
+      this.hovered = false;
+      return true;
+    }
+  }
 };

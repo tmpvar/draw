@@ -19,3 +19,19 @@ NavigationMode.prototype.keydown = function(event) {
 };
 
 
+NavigationMode.prototype.mousemove = function(event) {
+
+  var v = Vec2(event).divide(this.draw.scale, true).add(this.draw.translation).subtract(Vec2(this.draw.canvas.width/2, this.draw.canvas.height/2));
+  var r = this.draw.renderables, l = r.length, dirty = false;
+
+  for (var i = 0; i<l; i++) {
+    dirty = dirty || r[i].hit(v);
+  }
+
+  if (dirty) {
+    this.draw.dirty();
+  }
+
+};
+
+
