@@ -25,15 +25,16 @@ CircleMode.prototype.keydown = function(event) {
 
 
 CircleMode.prototype.mousemove = function(event) {
-  if (event.position) {
 
-    if (this.circle) {
-      this.circle.radius(this.circle.position.distance(event.position));
-      this.circle.helper.set(event.position);
-    }
+  // TODO: might be worth _never_ catching the mouse event here
+  //       the user might be wanting to add an implicit constraint
+  //
+  if (event.position && this.circle) {
+    this.circle.radius(this.circle.position.distance(event.position));
+    this.circle.helper.set(event.position);
     return true;
   }
-}
+};
 
 
 CircleMode.prototype.mousedown = function(event) {
