@@ -28,9 +28,11 @@ DimensionMode.prototype.mousedown = function(event) {
 
   if (hits.length) {
     if (!this.start) {
-      this.start = hits[0].point;
+      this.start = hits[0];
     } else {
-      this.draw.renderables.push(new Dimension(this.start, hits[0].point));
+      this.draw.renderables.push(
+        new Dimension(this.start, hits[0])
+      );
       this.start = null;
     }
 
