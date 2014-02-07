@@ -16,6 +16,7 @@ function Point(x, y, color) {
   this.color = [0, 255, 0, .2]
 }
 Point.prototype = Object.create(Vec2.prototype);
+Point.prototype.constructor = Point;
 
 Point.prototype.width = 2;
 Point.prototype.color = null;

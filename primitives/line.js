@@ -3,7 +3,7 @@ function Line(start, end) {
 }
 
 Line.prototype = Object.create(Segment2.prototype);
-
+Line.prototype.constructor = Line;
 Line.prototype.isLine = true;
 Line.prototype.finalized = false;
 Line.prototype.hovered = false;
