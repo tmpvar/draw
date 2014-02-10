@@ -10,6 +10,7 @@
     "fc": "~0.1.5",
     "circle2": "~0.1.2",
     "segment2": "*",
+    "line2" : "*"
   },
   "name": "draw",
   "version": "0.0.1",

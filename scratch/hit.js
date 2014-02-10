@@ -9,11 +9,13 @@ var collectHits = function(array, vec, hitThreshold) {
   var hits = [];
 
   for (var i = 0; i<l; i++) {
-    array[i].hit(vec, hitThreshold)
-        .filter(Boolean)
-        .map(function(hit) {
-          hits.push(hit)
-        });
+    if (array[i] && array[i].hit) {
+      array[i].hit(vec, hitThreshold)
+          .filter(Boolean)
+          .map(function(hit) {
+            hits.push(hit)
+          });
+    }
   }
 
   return hits.sort(function(a, b) {

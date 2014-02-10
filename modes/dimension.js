@@ -5,7 +5,7 @@ function DimensionMode(modeManager, draw) {
 DimensionMode.prototype = Object.create(Mode.prototype);
 
 DimensionMode.prototype.activate = function(prev, options) {
-  this.start = null;
+  this.dimension = null;
 };
 
 DimensionMode.prototype.keydown = function(event) {
@@ -17,6 +17,12 @@ DimensionMode.prototype.keydown = function(event) {
   }
 };
 
+DimensionMode.prototype.mousemove = function(event) {
+  if (this.dimension) {
+    this.dimension.relativePosition.set(event.position);
+  }
+}
+
 DimensionMode.prototype.mousedown = function(event) {
   var hits = collectHits(
     this.draw.renderables,
@@ -27,15 +33,27 @@ DimensionMode.prototype.mousedown = function(event) {
   });
 
   if (hits.length) {
-    if (!this.start) {
-      this.start = hits[0];
+
+    // Create a new dimension object
+    if (!this.dimension) {
+
+      this.dimension = Dimension().addReference(hits[0]);
+
+    // Update the dimension object by setting it's `b` reference
     } else {
-      this.draw.renderables.push(
-        new Dimension(this.start, hits[0])
-      );
-      this.start = null;
+      this.dimension.addReference(hits[0]);
     }
 
     return true;
+
+  } else if (this.dimension) {
+    this.draw.renderables.push(this.dimension);
+    this.dimension = null;
+  }
+};
+
+DimensionMode.prototype.update = function(ctx, deltaTime) {
+  if (this.dimension) {
+    this.dimension.render(ctx, deltaTime);
   }
 };
