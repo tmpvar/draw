@@ -8,6 +8,101 @@
       background: #111122;
     }
 
+    section#dialog {
+      font-family: sans-serif;
+      position:absolute;
+      top: 10;
+      left: 10;
+      border: 1px solid #ccc;
+      z-index: 10;
+
+      -webkit-border-radius: 10px;
+      -webkit-border-bottom-right-radius: 0;
+      -moz-border-radius: 10px;
+      -moz-border-radius-bottomright: 0;
+      border-radius: 10px;
+      border-bottom-right-radius: 0;
+      background: #979797;
+    }
+
+      section#dialog section.field-container {
+        padding: 1em 0;
+      }
+
+      section#dialog .field-wrapper {
+        margin: 0 1em .5em 1em;
+        padding: .2em 0 .2em 1em;
+        border: 1px solid #454545;
+
+        background: #d0d0d0;
+
+        -webkit-border-radius: .75em;
+        -moz-border-radius: .75em;
+        border-radius: .75em;
+        line-height: 1em;
+        font-size: 1em;
+      }
+
+      section#dialog .field-wrapper.focused {
+        background: #ddd;
+        border-color: #0086FF;
+      }
+
+        section#dialog .field-wrapper span {
+          color: #333;
+        }
+
+        section#dialog .field-wrapper span:after {
+        }
+
+        section#dialog .field-wrapper input {
+          text-align:right;
+
+          line-height: 1.5em;
+          height: 1.5em;
+          font-size: 1.25em;
+          font-family: sans-serif;
+
+          width:80%;
+
+          border: none;
+          padding: 0;
+          margin: 0;
+          margin-right: .25em;
+          margin-right: .25em;
+
+          padding-left:.75em;
+          background: transparent;
+          -webkit-appearance: none;
+          outline: none;
+        }
+
+        section#dialog input:focus {
+          background-color: '#F0F';
+        }
+
+      section#dialog h1 {
+        background: #747474;
+        -webkit-border-radius: 10px;
+        -webkit-border-bottom-right-radius: 0;
+        -webkit-border-bottom-left-radius: 0;
+        -moz-border-radius: 10px;
+        -moz-border-radius-bottomright: 0;
+        -moz-border-radius-bottomleft: 0;
+        border-radius: 10px;
+        border-bottom-right-radius: 0;
+        border-bottom-left-radius: 0;
+        margin:0;
+        padding-left: 1em;
+
+        line-height: 2em;
+        font-size: 1em;
+        border-bottom: 1px solid #979797;
+        font-weight: normal;
+      }
+
+
+
     section#status {
       position:absolute;
       top: 0px;
@@ -69,6 +164,7 @@
   <script type="text/javascript" src="primitives/circle.js"></script>
 
   <script type="text/javascript" src="scratch/hit.js"></script>
+  <script type="text/javascript" src="scratch/dialog.js"></script>
 
   <script type="text/javascript" src="tools/dimension.js"></script>
 
@@ -90,8 +186,7 @@
     <input tabindex="0" type="text" id="command" />
   </section-->
   <script type="text/javascript" src="entry.js"></script>
-
-
+  <section id="dialog" style="display:none"></section>
 
 </body>
 </html>
