@@ -38,7 +38,7 @@ DimensionMode.prototype.mousedown = function(event) {
     if (!this.dimension) {
 
       this.dimension = Dimension().addReference(hits[0]);
-
+      this.dimension.relativePosition.set(event.position);
     // Update the dimension object by setting it's `b` reference
     } else {
       this.dimension.addReference(hits[0]);
