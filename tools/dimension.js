@@ -17,8 +17,19 @@ function Dimension() {
   this._value = 0;
 }
 
+Dimension.prototype.getDimensionValue = function() {
+  var points = this.extractPointsOfInterest();
+  return Vec2.clean(points[0].distance(points[1]));
+};
+
 Dimension.prototype.addReference = function(ref) {
   this.references.push(ref);
+
+  this.val(this.getDimensionValue());
+  ref.thing.change(function() {
+    this.val(this.getDimensionValue(), true);
+  }.bind(this));
+
   return this;
 };
 
@@ -31,7 +42,6 @@ Dimension.prototype.removeReference = function(ref) {
 };
 
 Dimension.prototype.extractPointsOfInterest = function() {
-  console.log(this.references);
   if (this.references.length === 1) {
     var ref = this.references[0];
 
@@ -57,9 +67,32 @@ Dimension.prototype.extractPointsOfInterest = function() {
 Dimension.prototype.construction = true;
 Dimension.prototype.helper = true;
 
-Dimension.prototype.val = function(val) {
+Dimension.prototype.val = function(val, silent) {
 
   if (typeof val !== 'undefined') {
+
+    if (!silent && this.references.length) {
+      var orig = this._value;
+      var current = val;
+      var diff = current - orig;
+
+      // TODO: handle other types!
+      var ref = this.references[0]
+      if (ref.thing instanceof Line && diff !== 0 && current !== 0) {
+
+        // TODO: this needs to hit a constraint solver or some such
+        var seg = ref.thing
+        var midpoint = seg.midpoint();
+        var adiff = seg.start.subtract(midpoint, true).normalize();
+
+        var angle = Vec2(1,0).angleTo(adiff);
+
+        var vec = Vec2(current/2, 0).rotate(angle);
+        seg.start.set(midpoint.add(vec, true), true);
+        seg.end.set(midpoint.subtract(vec), true);
+      }
+    }
+
     this._value = val;
   }
 
@@ -99,6 +132,6 @@ Dimension.prototype.render = function(ctx, deltaTime) {
 
   ctx.fillStyle = "#ccc";
   ctx.font = "22px monospace"
-  ctx.fillText(Number(points[0].distance(points[1])).toFixed(2), x, y);
+  ctx.fillText(Number(this.val()).toFixed(2), x, y);
 
 };
