@@ -104,6 +104,12 @@ Draw.prototype.handle = function(type, event) {
   }
 };
 
+Draw.prototype.remove = function(renderable) {
+  this.renderables = this.renderables.filter(function(r) {
+    return r !== renderable;
+  });
+};
+
 Draw.prototype.update = function(delta) {
   return this.modeManager.update(this.ctx, delta);
 };

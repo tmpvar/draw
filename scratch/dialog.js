@@ -122,14 +122,15 @@ Field.NUMBER = 'createFloat';
 Field.INTEGER = 'createInt';
 Field.STRING = 'createString';
 
-function Action(text) {
+function Action(text, keycode) {
   this.text = text;
+  this.keycode = keycode;
 }
 
 // This is what you override.
 // Obj is the form serialized
 Action.prototype.perform = function(obj) {
-
+  console.warn('unhandled action.perform', obj);
 };
 
 function Dialog(title, fields, actions, doc) {
@@ -163,8 +164,7 @@ function Dialog(title, fields, actions, doc) {
 
   this.position = new Vec2();
   this.position.change(this.moveTo.bind(this));
-
-  this.bindEvents();
+  this.actions = actions || [];
 };
 
 Dialog.prototype.change = function(fields, callback) {
@@ -195,33 +195,43 @@ Dialog.prototype.activate = function(parentEl) {
 };
 
 Dialog.prototype.deactivate = function() {
-  this.parentElement.removeChild(this.el);
-  this.parentElement.style.display = "none";
+  if (this.parentElement) {
+    if (this.el.parentElement) {
+      this.parentElement.removeChild(this.el);
+    }
+    this.parentElement.style.display = "none";
+  }
 };
 
 Dialog.prototype.addField = function(field) {
+  this._fields.push(field);
   this.fieldContainer.appendChild(field.createDOM(this.document));
 };
 
+Dialog.prototype.serialize = function() {
+  var f = this._fields, l = f.length, ret = {};
+  for (var i = 0; i<l; i++) {
+    ret[f[i].label()] = f[i].value();
+  }
+  return ret;
+}
+
 Dialog.prototype.handleEvent = function(ev) {
+  var ret = false;
+  if (this.actions.length) {
+    var a = this.actions, l = a.length;
+    var serialized = this.serialize();
+    for (var i = 0; i<l; i++) {
+      if (a[i].keycode === ev.keyCode) {
+        a[i].perform(serialized);
+        ret = true;
+      }
+    }
+  }
+
   if (ev.target.field) {
-    ev.target.field.eventHandler(ev);
+    ret = ret || ev.target.field.eventHandler(ev);
   }
-};
 
-Dialog.prototype.bindEvents = function() {
-  var events = [
-    'mousedown',
-    'mousemove',
-    'mouseup',
-    'change',
-    'keydown',
-    'keyup',
-    'focus',
-    'blur'
-  ];
-
-  for (var i=0; i<events.length; i++) {
-    this.el.addEventListener(events[i], this.handleEvent.bind(this), true);
-  }
+  return ret;
 };

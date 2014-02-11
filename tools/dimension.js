@@ -17,6 +17,10 @@ function Dimension() {
   this._value = 0;
 }
 
+Dimension.prototype.destroy = function() {
+  console.warn('TODO: cleanup event handlers')
+}
+
 Dimension.prototype.getDimensionValue = function() {
   var points = this.extractPointsOfInterest();
   return Vec2.clean(points[0].distance(points[1]));

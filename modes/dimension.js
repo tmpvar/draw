@@ -1,10 +1,40 @@
 function DimensionMode(modeManager, draw) {
   Mode.call(this, modeManager, draw);
 
+  this.dialogOk = new Action('ok', 13);
+  this.dialogCancel = new Action('cancel', 27);
   this.dimensionValue = Field('value', Field.FLOAT, '1.0')
   this.dialog = Dialog('dimension', [
     this.dimensionValue
+  ], [
+    this.dialogCancel,
+    this.dialogOk
   ]);
+
+  this.dialogOk.perform = function() {
+    this.dialog.deactivate();
+    return true;
+  }.bind(this);
+
+  this.dialogCancel.perform = function() {
+    this.dialog.deactivate();
+
+
+    // TODO: allow `editmode` to be passed in activate which will:
+    //       return a user directly to the previous mode if esc/enter
+    //       are pressed
+
+    if (!this.dimension) {
+      this.exit();
+    } else if (!this.dimension.finalized) {
+      this.draw.remove(this.dimension);
+      this.dimension.destroy();
+    }
+
+    this.dimension = null;
+
+    return true;
+  }.bind(this);
 
   this.dimensionValue.change(this.valueChangeHandler.bind(this));
   this.changeHandlers = [];
@@ -29,8 +59,7 @@ DimensionMode.prototype.deactivate = function() {
     var h = this.changeHandlers.pop();
     h.thing.ignore(h.fn);
   }
-
-}
+};
 
 DimensionMode.prototype.keydown = function(event) {
   switch (event.keyCode) {
@@ -39,6 +68,8 @@ DimensionMode.prototype.keydown = function(event) {
       return true;
     break;
   }
+
+  return this.dialog.handleEvent(event);
 };
 
 DimensionMode.prototype.mousemove = function(event) {
@@ -57,8 +88,6 @@ DimensionMode.prototype.mousedown = function(event) {
   });
 
   if (hits.length) {
-
-
 
     // Create a new dimension object
     if (!this.dimension || this.dimension.finalized) {
@@ -85,5 +114,19 @@ DimensionMode.prototype.mousedown = function(event) {
 DimensionMode.prototype.update = function(ctx, deltaTime) {
   if (this.dimension) {
     this.dimension.render(ctx, deltaTime);
+  }
+};
+
+DimensionMode.prototype.handle = function(type, event) {
+  if (typeof this[type] === 'function') {
+    var r;
+    if (this.dialog) {
+      r = this.dialog.handleEvent(event);
+    }
+
+    if (!r) {
+      r = this[type](event);
+    }
+    return r;
   }
 };
