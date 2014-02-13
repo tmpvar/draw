@@ -7,18 +7,42 @@ Polygon.prototype.render = function(ctx, delta) {
   var line = new Line();
 
   ctx.beginPath();
+    ctx.moveTo(this.point(0));
+    this.each(function(p, point, n, i) {
+      ctx.lineTo(n.x, n.y);
+    });
+
+  ctx.lineWidth = 1;
+  ctx.closePath();
+  ctx.strokeStyle = "rgba(255,255,255,.6)";
+  ctx.stroke();
+  if (this.hovered) {
+    ctx.fillStyle = "rgba(0, 255, 0, .05)";
+    ctx.fill();
+  } else if (ctx.fillBackground) {
+    console.log('here');
+    ctx.save();
+      ctx.rotate(-Math.PI/10);
+      ctx.fillStyle = ctx.fillBackground;
+      ctx.fill();
+    ctx.restore();
+  }
+
+  ctx.beginPath();
     this.each(function(p, point, n, i) {
       line.start = point;
       line.end = n;
       line.hovered = this.hoveredLines && this.hoveredLines[i];
-      line.render(ctx, delta);
+      if (line.hovered) {
+        line.render(ctx, delta);
+      } else {
+        line.start.render(ctx, delta);
+        line.end.render(ctx, delta);
+      }
     });
   ctx.closePath();
 
-  if (this.hovered) {
-    ctx.fillStyle = "rgba(0, 255, 0, .05)";
-    ctx.fill();
-  }
+
 };
 
 Polygon.prototype.computeGeometry = function(array, hole) {
@@ -48,12 +72,10 @@ Polygon.prototype.hit = function(vec, threshold) {
       this.hoveredLines[i] = true;
       Array.prototype.push.apply(ret, hoveredLine);
     }
-    contains = contains || hoveredLine;
   }
 
-  contains = contains || this.closestPointTo(vec).distance(vec) < threshold;
   contains = contains || this.containsPoint(vec);
-  this.hovered = contains;
+  this.hovered = contains || contains.length;
 
   return ret;
 };

@@ -21,6 +21,12 @@ Circle.prototype.render = function(ctx) {
     if (this.hovered) {
       ctx.fillStyle = "rgba(0, 255, 0, .05)";
       ctx.fill();
+    } else if (ctx.fillBackground) {
+      ctx.save();
+        ctx.rotate(-Math.PI/10);
+        ctx.fillStyle = ctx.fillBackground;
+        ctx.fill();
+      ctx.restore();
     }
 
     if (this.circumferenceHovered) {

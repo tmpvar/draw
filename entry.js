@@ -8,6 +8,26 @@ var ctx = fc(function(delta) {
 
 var draw = new Draw(ctx.canvas, ctx, ctx.dirty);
 
+var background = document.createElement('canvas')
+
+var bctx = background.getContext('2d');
+background.width = 12;
+background.height = 12;
+
+bctx.lineWidth = 8;
+bctx.strokeStyle = 'rgba(255,255,255,.1)';
+bctx.lineCap = 'square';
+bctx.beginPath()
+  bctx.moveTo(-10, background.height/2);
+  bctx.lineTo(background.width+10, background.height/2);
+bctx.closePath()
+
+  bctx.stroke();
+ctx.fillBackground = ctx.createPattern(background, 'repeat');
+
+
+
+
 window.addEventListener('resize', ctx.dirty);
 
 draw.fixMouse = function(e) {
