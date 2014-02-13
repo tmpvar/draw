@@ -34,11 +34,11 @@ LineMode.prototype.keydown = function(event) {
 
     case 67: // [c]lose
       // TODO: add undo
-      if (!this.current[this.current.length-1].finalized) {
-        this.current.pop();
-      }
-
       if (this.current.length) {
+        if (!this.current[this.current.length-1].finalized) {
+          this.current.pop();
+        }
+
         var points = [];
         this.current.forEach(function(line) {
           line.computeGeometry(points);
