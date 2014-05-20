@@ -7,7 +7,8 @@ Polygon.prototype.render = function(ctx, delta) {
   var line = new Line();
 
   ctx.beginPath();
-    ctx.moveTo(this.point(0));
+    var first = this.point(0);
+    ctx.moveTo(first.x, first.y);
     this.each(function(p, point, n, i) {
       ctx.lineTo(n.x, n.y);
     });
